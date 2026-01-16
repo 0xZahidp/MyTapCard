@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MyTapCard 🚀
 
-## Getting Started
+**MyTapCard** is an NFC-powered digital business card and profile-sharing platform.
+It allows users to create a personalized profile with links, contact details, and social media, which can be instantly shared using an NFC card or a single URL.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Features (Planned & In Progress)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* 🔐 User authentication (login & registration)
+* 🪪 Public profile page (`/username`)
+* 🔗 Add and manage multiple links (social, phone, email)
+* 📲 NFC-ready profile links
+* 🎨 Customizable profile design
+* 💳 Manual subscription system (bKash / Nagad)
+* 🧑‍💼 Admin dashboard for subscription approval
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+* **Frontend & Backend:** Next.js (App Router)
+* **Styling:** Tailwind CSS
+* **Database:** MongoDB Atlas
+* **Authentication:** Custom JWT-based auth (planned)
+* **Deployment:** Vercel
+* **Storage:** Cloudinary (planned)
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🎯 Project Goal
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To provide a simple, affordable, and locally optimized NFC digital identity solution, especially for users in Bangladesh, enabling seamless contact sharing with one tap.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🚧 Project Status
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> 🟡 **In active development (MVP stage)**
+
+This project is currently under development and focused on building a stable MVP before adding advanced features.
+
+---
+
+## 📌 Author
+
+**Zahid Hasan**
+Junior Developer | Building MyTapCard
