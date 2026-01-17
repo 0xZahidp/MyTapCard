@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/mongodb";
 import Profile from "@/models/Profile";
 import Link from "@/models/Link";
+import Subscription from "@/models/Subscription";
 import { notFound } from "next/navigation";
 
 interface Props {
@@ -33,6 +34,12 @@ export default async function PublicProfilePage({ params }: Props) {
     .sort({ order: 1 })
     .lean();
 
+  const subscription = await Subscription.findOne({
+    userId: profile.userId,
+  }).lean();
+
+  const isPro = subscription?.plan === "pro";
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -50,9 +57,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
           {/* Bio */}
           {profile.bio && (
-            <p className="text-gray-600 mt-2 text-sm">
-              {profile.bio}
-            </p>
+            <p className="text-gray-600 mt-2 text-sm">{profile.bio}</p>
           )}
         </div>
 
@@ -70,14 +75,10 @@ export default async function PublicProfilePage({ params }: Props) {
               if (link.type === "phone") {
                 href = `tel:${link.value}`;
                 icon = "📞";
-              }
-
-              if (link.type === "email") {
+              } else if (link.type === "email") {
                 href = `mailto:${link.value}`;
                 icon = "📧";
-              }
-
-              if (link.type === "url") {
+              } else if (link.type === "url") {
                 icon = "🌐";
               }
 
@@ -104,9 +105,11 @@ export default async function PublicProfilePage({ params }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="text-center text-xs text-gray-400 pb-4">
-          Powered by <span className="font-medium">MyTapCard</span>
-        </div>
+        {!isPro && (
+          <div className="text-center text-xs text-gray-400 pb-4">
+            Powered by <span className="font-medium">MyTapCard</span>
+          </div>
+        )}
       </div>
     </main>
   );

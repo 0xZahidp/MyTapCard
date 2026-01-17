@@ -30,6 +30,9 @@ export default function DashboardPage() {
   // ✅ Day 12: store fetched links
   const [links, setLinks] = useState<any[]>([]);
 
+  // ✅ PART 4 — QR state
+  const [qr, setQr] = useState<string | null>(null);
+
   // ✅ Day 12: fetch links on load
   useEffect(() => {
     fetch("/api/links")
@@ -62,34 +65,34 @@ export default function DashboardPage() {
   };
 
   const handleLinkSubmit = async (e: FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!linkForm.type || !linkForm.label || !linkForm.value) {
-    alert("All link fields are required");
-    return;
-  }
+    if (!linkForm.type || !linkForm.label || !linkForm.value) {
+      alert("All link fields are required");
+      return;
+    }
 
-  const res = await fetch("/api/links", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(linkForm),
-  });
+    const res = await fetch("/api/links", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(linkForm),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  // ✅ PART 4 — Friendly message from backend
-  if (!res.ok) {
-    alert(data.message);
-    return;
-  }
+    // ✅ Friendly message from backend
+    if (!res.ok) {
+      alert(data.message);
+      return;
+    }
 
-  alert("Link added ✅");
-  setLinkForm({ type: "", label: "", value: "" });
+    alert("Link added ✅");
+    setLinkForm({ type: "", label: "", value: "" });
 
-  // ✅ Refresh links list after add
-  const refreshed = await fetch("/api/links").then((r) => r.json());
-  setLinks(refreshed);
-};
+    // ✅ Refresh links list after add
+    const refreshed = await fetch("/api/links").then((r) => r.json());
+    setLinks(refreshed);
+  };
 
   return (
     <main className="max-w-xl mx-auto p-6 space-y-6">
@@ -193,7 +196,6 @@ export default function DashboardPage() {
                       body: JSON.stringify({ id: link._id, direction: "up" }),
                     });
 
-                    // refresh (better UX than location.reload)
                     const refreshed = await fetch("/api/links").then((r) =>
                       r.json()
                     );
@@ -244,6 +246,36 @@ export default function DashboardPage() {
           ))
         )}
       </div>
+
+      {/* ✅ PART 4 — DASHBOARD UI (SHOW & DOWNLOAD QR) */}
+      <hr className="my-8" />
+
+      <h2 className="text-xl font-bold mb-3">Your QR Code</h2>
+
+      <button
+        className="bg-black text-white px-4 py-2 rounded mb-4"
+        onClick={async () => {
+          const res = await fetch("/api/qr");
+          const data = await res.json();
+          setQr(data.qr);
+        }}
+      >
+        Generate QR Code
+      </button>
+
+      {qr && (
+        <div className="space-y-3">
+          <img src={qr} alt="QR Code" className="w-48" />
+
+          <a
+            href={qr}
+            download="mytapcard-qr.png"
+            className="inline-block text-blue-600 underline"
+          >
+            Download QR
+          </a>
+        </div>
+      )}
     </main>
   );
 }
