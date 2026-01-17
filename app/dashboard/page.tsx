@@ -27,6 +27,13 @@ export default function DashboardPage() {
     value: "",
   });
 
+  // ✅ PART 3 — USER UI (REQUEST UPGRADE) state
+  const [paymentForm, setPaymentForm] = useState({
+    method: "",
+    transactionId: "",
+    amount: 0,
+  });
+
   // ✅ Day 12: store fetched links
   const [links, setLinks] = useState<any[]>([]);
 
@@ -276,6 +283,59 @@ export default function DashboardPage() {
           </a>
         </div>
       )}
+
+      {/* 🧑‍💻 PART 3 — USER UI (REQUEST UPGRADE) */}
+      <hr className="my-10" />
+
+      <h2 className="text-xl font-bold mb-3">Upgrade to Pro</h2>
+
+      <form
+        className="space-y-3"
+        onSubmit={async (e) => {
+          e.preventDefault();
+
+          const res = await fetch("/api/payments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(paymentForm),
+          });
+
+          const data = await res.json();
+          alert(data.message);
+        }}
+      >
+        <select
+          className="w-full border px-3 py-2 rounded"
+          onChange={(e) =>
+            setPaymentForm({ ...paymentForm, method: e.target.value })
+          }
+        >
+          <option value="">Select Payment Method</option>
+          <option value="bkash">bKash</option>
+          <option value="nagad">Nagad</option>
+        </select>
+
+        <input
+          placeholder="Transaction ID"
+          className="w-full border px-3 py-2 rounded"
+          onChange={(e) =>
+            setPaymentForm({ ...paymentForm, transactionId: e.target.value })
+          }
+        />
+
+        <input
+          type="number"
+          placeholder="Amount"
+          className="w-full border px-3 py-2 rounded"
+          onChange={(e) =>
+            setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })
+          }
+        />
+
+        <button className="w-full bg-black text-white py-2 rounded">
+          Submit Payment
+        </button>
+      </form>
     </main>
   );
 }
