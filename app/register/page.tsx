@@ -1,60 +1,59 @@
+"use client";
+
 import AuthCard from "@/components/auth/AuthCard";
+import { useState } from "react";
 
 export default function RegisterPage() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+
+    const data = await res.json();
+    alert(data.message);
+  };
+
   return (
     <AuthCard>
       <h1 className="text-2xl font-bold mb-6 text-center">
         Create your MyTapCard
       </h1>
 
-      <form className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Full Name
-          </label>
-          <input
-            type="text"
-            placeholder="Zahid Hasan"
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-          />
-        </div>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <input
+          placeholder="Full Name"
+          className="w-full border px-3 py-2 rounded"
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-          />
-        </div>
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full border px-3 py-2 rounded"
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Password
-          </label>
-          <input
-            type="password"
-            placeholder="Create a password"
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-          />
-        </div>
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border px-3 py-2 rounded"
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+        />
 
-        <button
-          type="submit"
-          className="w-full bg-black text-white py-2 rounded hover:opacity-90"
-        >
+        <button className="w-full bg-black text-white py-2 rounded">
           Create Account
         </button>
       </form>
-
-      <p className="text-sm text-center mt-4 text-gray-600">
-        Already have an account?{" "}
-        <a href="/login" className="underline">
-          Login
-        </a>
-      </p>
     </AuthCard>
   );
 }
