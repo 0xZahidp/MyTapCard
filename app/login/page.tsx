@@ -1,49 +1,80 @@
+"use client";
+
 import AuthCard from "@/components/auth/AuthCard";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json().catch(() => ({ message: "Invalid response" }));
+
+      if (res.ok) {
+        router.push("/dashboard");
+        router.refresh(); // ensures server components see the new cookie
+      } else {
+        alert(data.message || "Login failed");
+      }
+    } catch (err) {
+      alert("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthCard>
       <h1 className="text-2xl font-bold mb-6 text-center">
         Login to MyTapCard
       </h1>
 
-      <form className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-          />
-        </div>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full border px-3 py-2 rounded"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          required
+        />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Password
-          </label>
-          <input
-            type="password"
-            placeholder="••••••••"
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-          />
-        </div>
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border px-3 py-2 rounded"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          required
+        />
 
         <button
+          className="w-full bg-black text-white py-2 rounded disabled:opacity-60"
+          disabled={loading}
           type="submit"
-          className="w-full bg-black text-white py-2 rounded hover:opacity-90"
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
-
-      <p className="text-sm text-center mt-4 text-gray-600">
-        Don’t have an account?{" "}
-        <a href="/register" className="underline">
-          Register
-        </a>
-      </p>
     </AuthCard>
   );
 }

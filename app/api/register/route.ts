@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import Subscription from "@/models/Subscription";
 
 export async function POST(req: Request) {
   try {
@@ -28,10 +29,17 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({
+    // ✅ store created user in a variable
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
+    });
+
+    // ✅ auto-create free subscription
+    await Subscription.create({
+      userId: user._id,
+      plan: "free",
     });
 
     return NextResponse.json(

@@ -3,6 +3,7 @@
 import AuthCard from "@/components/auth/AuthCard";
 import { useState } from "react";
 
+
 export default function RegisterPage() {
   const [form, setForm] = useState({
     name: "",
