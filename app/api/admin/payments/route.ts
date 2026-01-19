@@ -7,16 +7,61 @@ import PaymentRequest from "@/models/PaymentRequest";
 import Subscription from "@/models/Subscription";
 import User from "@/models/User";
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
+// ✅ NextAuth/Auth.js server helper
+import { auth } from "@/lib/auth";
+
+export const runtime = "nodejs";
+
+const JWT_SECRET = process.env.JWT_SECRET;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 async function requireAdmin() {
-  const cookieStore = await cookies(); // ✅ IMPORTANT for Next 16.1.x
+  if (!ADMIN_EMAIL) {
+    return {
+      ok: false as const,
+      res: NextResponse.json(
+        { message: "ADMIN_EMAIL is missing" },
+        { status: 500 }
+      ),
+    };
+  }
+
+  await dbConnect();
+
+  // 1) ✅ Prefer NextAuth/Auth.js session (Google/Facebook)
+  const session = await auth();
+  const sessionEmail =
+    (session?.user as any)?.email || (session?.user as any)?.emailAddress;
+
+  if (sessionEmail) {
+    // admin rule = email matches ADMIN_EMAIL
+    if (sessionEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      return {
+        ok: false as const,
+        res: NextResponse.json({ message: "Forbidden" }, { status: 403 }),
+      };
+    }
+
+    // load user (optional, but keeps return shape consistent)
+    const adminUser = await User.findOne({ email: sessionEmail }).lean();
+    return { ok: true as const, adminUser };
+  }
+
+  // 2) Legacy fallback: JWT cookie "token"
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
     return {
       ok: false as const,
       res: NextResponse.json({ message: "Unauthorized" }, { status: 401 }),
+    };
+  }
+
+  if (!JWT_SECRET) {
+    return {
+      ok: false as const,
+      res: NextResponse.json({ message: "JWT_SECRET is missing" }, { status: 500 }),
     };
   }
 
@@ -30,23 +75,21 @@ async function requireAdmin() {
     };
   }
 
-  await dbConnect();
+  const legacyUser = await User.findById(decoded.userId).lean();
 
-  const adminUser = await User.findById(decoded.userId).lean();
-
-  if (!adminUser || adminUser.email !== process.env.ADMIN_EMAIL) {
+  if (!legacyUser || legacyUser.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
     return {
       ok: false as const,
       res: NextResponse.json({ message: "Forbidden" }, { status: 403 }),
     };
   }
 
-  return { ok: true as const, adminUser };
+  return { ok: true as const, adminUser: legacyUser };
 }
 
 export async function GET() {
-  const auth = await requireAdmin();
-  if (!auth.ok) return auth.res;
+  const authz = await requireAdmin();
+  if (!authz.ok) return authz.res;
 
   try {
     const payments = await PaymentRequest.find({ status: "pending" })
@@ -55,7 +98,7 @@ export async function GET() {
       .lean();
 
     return NextResponse.json(payments);
-  } catch (e: any) {
+  } catch {
     return NextResponse.json(
       { message: "Error fetching payments" },
       { status: 500 }
@@ -64,8 +107,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireAdmin(); // ✅ protect approval too
-  if (!auth.ok) return auth.res;
+  const authz = await requireAdmin();
+  if (!authz.ok) return authz.res;
 
   try {
     const { paymentId, userId } = await req.json();
@@ -76,8 +119,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    await dbConnect();
 
     await PaymentRequest.findByIdAndUpdate(paymentId, { status: "approved" });
 

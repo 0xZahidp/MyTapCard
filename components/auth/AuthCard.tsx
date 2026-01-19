@@ -2,10 +2,8 @@ import { ReactNode } from "react";
 
 export default function AuthCard({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow">
-        {children}
-      </div>
-    </div>
+    <section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      {children}
+    </section>
   );
 }

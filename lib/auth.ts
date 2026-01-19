@@ -1,28 +1,22 @@
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { cookies } from "next/headers";
+import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
+import Facebook from "next-auth/providers/facebook";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import clientPromise from "@/lib/mongodbClient";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: MongoDBAdapter(clientPromise),
+  session: { strategy: "jwt" },
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    Facebook({
+      clientId: process.env.FACEBOOK_CLIENT_ID!,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+    }),
+  ],
+  secret: process.env.AUTH_SECRET,
+});
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined");
-}
-
-export interface AuthUser extends JwtPayload {
-  userId: string;
-  email: string;
-}
-
-export async function getUserFromToken(): Promise<AuthUser | null> {
-  // Next.js 16: cookies() is async
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-
-  if (!token) return null;
-
-  try {
-    return jwt.verify(token, JWT_SECRET) as AuthUser;
-  } catch (error) {
-    console.error("Invalid JWT:", error);
-    return null;
-  }
-}

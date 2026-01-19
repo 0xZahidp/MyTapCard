@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import Profile from "@/models/Profile";
 import Link from "@/models/Link";
 import Subscription from "@/models/Subscription";
+import User from "@/models/User";
 import { notFound } from "next/navigation";
 
 interface Props {
@@ -27,6 +28,9 @@ export default async function PublicProfilePage({ params }: Props) {
 
   if (!profile) notFound();
 
+  const user = await User.findById(profile.userId).select("avatar").lean();
+  const avatarUrl = user?.avatar || "";
+
   const links = await Link.find({
     profileId: profile._id,
     isActive: true,
@@ -41,75 +45,152 @@ export default async function PublicProfilePage({ params }: Props) {
   const isPro = subscription?.plan === "pro";
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="pt-8 pb-6 px-6 text-center">
-          {/* Avatar */}
-          <div className="w-24 h-24 rounded-full bg-gray-200 mx-auto mb-4 flex items-center justify-center text-gray-500">
-            <span className="text-sm">Photo</span>
+    <main className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 px-4 py-10">
+      <div className="mx-auto w-full max-w-md">
+        {/* Card */}
+        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+          {/* Header */}
+          <div className="px-6 pt-8 pb-6 text-center">
+            {/* Avatar */}
+            <div className="mx-auto mb-4 h-24 w-24">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={`${profile.displayName} avatar`}
+                  className="h-24 w-24 rounded-full object-cover border border-gray-200 shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="h-24 w-24 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-500">
+                  <span className="text-sm font-medium">No Photo</span>
+                </div>
+              )}
+            </div>
+
+            {/* Name + Pro badge */}
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+                {profile.displayName}
+              </h1>
+
+              {isPro && (
+                <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
+                  PRO
+                </span>
+              )}
+            </div>
+
+            {/* Username (optional vibe, looks clean) */}
+            {profile.username && (
+              <p className="mt-1 text-sm text-gray-500">@{profile.username}</p>
+            )}
+
+            {/* Bio */}
+            {profile.bio && (
+              <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                {profile.bio}
+              </p>
+            )}
           </div>
 
-          {/* Name */}
-          <h1 className="text-2xl font-bold text-gray-900">
-            {profile.displayName}
-          </h1>
+          {/* Divider */}
+          <div className="h-px w-full bg-gray-100" />
 
-          {/* Bio */}
-          {profile.bio && (
-            <p className="text-gray-600 mt-2 text-sm">{profile.bio}</p>
+          {/* Links */}
+          <div className="px-6 py-6">
+            {links.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
+                <p className="text-sm font-medium text-gray-700">
+                  No links yet
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  This profile doesn’t have any active links.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {links.map((link: any) => {
+                  let href = link.value;
+                  let icon = "🔗";
+
+                  if (link.type === "phone") {
+                    href = `tel:${link.value}`;
+                    icon = "📞";
+                  } else if (link.type === "email") {
+                    href = `mailto:${link.value}`;
+                    icon = "📧";
+                  } else if (link.type === "url") {
+                    icon = "🌐";
+                  }
+
+                  return (
+                    <a
+                      key={String(link._id)}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 transition hover:border-gray-300 hover:bg-gray-50 active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-10 w-10 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-lg">
+                          {icon}
+                        </span>
+
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-gray-900">
+                            {link.label}
+                          </div>
+                          <div className="truncate text-xs text-gray-500">
+                            {link.type === "phone"
+                              ? link.value
+                              : link.type === "email"
+                              ? link.value
+                              : link.value}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition group-hover:text-gray-600">
+                        {/* right arrow */}
+                        <svg
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M7.21 14.77a.75.75 0 010-1.06L10.94 10 7.21 6.29a.75.75 0 111.06-1.06l4.24 4.24a.75.75 0 010 1.06l-4.24 4.24a.75.75 0 01-1.06 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          {!isPro && (
+            <div className="px-6 pb-6">
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-center">
+                <p className="text-xs text-gray-500">
+                  Powered by{" "}
+                  <span className="font-semibold text-gray-700">
+                    MyTapCard
+                  </span>
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Links */}
-        <div className="px-6 pb-8 space-y-3">
-          {links.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center">
-              No links added yet.
-            </p>
-          ) : (
-            links.map((link: any) => {
-              let href = link.value;
-              let icon = "🔗";
-
-              if (link.type === "phone") {
-                href = `tel:${link.value}`;
-                icon = "📞";
-              } else if (link.type === "email") {
-                href = `mailto:${link.value}`;
-                icon = "📧";
-              } else if (link.type === "url") {
-                icon = "🌐";
-              }
-
-              return (
-                <a
-                  key={String(link._id)}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl border border-gray-200 hover:bg-gray-100 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{icon}</span>
-                    <span className="font-medium text-gray-800">
-                      {link.label}
-                    </span>
-                  </div>
-
-                  <span className="text-gray-400 text-sm">›</span>
-                </a>
-              );
-            })
-          )}
-        </div>
-
-        {/* Footer */}
-        {!isPro && (
-          <div className="text-center text-xs text-gray-400 pb-4">
-            Powered by <span className="font-medium">MyTapCard</span>
-          </div>
-        )}
+        {/* Bottom spacing / small note */}
+        <p className="mt-6 text-center text-[11px] text-gray-400">
+          © {new Date().getFullYear()} MyTapCard
+        </p>
       </div>
     </main>
   );
