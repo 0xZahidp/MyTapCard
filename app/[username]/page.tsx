@@ -13,6 +13,47 @@ function escapeRegex(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/* ===============================
+   LINK DISPLAY FORMATTER (KEY FIX)
+================================= */
+function formatLinkValue(type: string, value: string) {
+  if (!value) return "";
+
+  // Phone & Email → show as-is
+  if (type === "phone" || type === "email") {
+    return value;
+  }
+
+  // URL handling
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace("www.", "");
+    const path = url.pathname.replace(/^\/+/, "");
+
+    // Platform-specific cleanup
+    if (host.includes("facebook.com")) {
+      return "facebook.com";
+    }
+
+    if (host.includes("t.me")) {
+      return path ? `@${path}` : "Telegram";
+    }
+
+    if (host.includes("instagram.com")) {
+      return path ? `@${path}` : "Instagram";
+    }
+
+    if (host.includes("linkedin.com")) {
+      return "linkedin.com";
+    }
+
+    // Default: show domain only
+    return host;
+  } catch {
+    return value;
+  }
+}
+
 export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params;
   const usernameParam = (username || "").trim();
@@ -47,11 +88,9 @@ export default async function PublicProfilePage({ params }: Props) {
   return (
     <main className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 px-4 py-10">
       <div className="mx-auto w-full max-w-md">
-        {/* Card */}
         <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
           {/* Header */}
           <div className="px-6 pt-8 pb-6 text-center">
-            {/* Avatar */}
             <div className="mx-auto mb-4 h-24 w-24">
               {avatarUrl ? (
                 <img
@@ -67,9 +106,8 @@ export default async function PublicProfilePage({ params }: Props) {
               )}
             </div>
 
-            {/* Name + Pro badge */}
             <div className="flex items-center justify-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+              <h1 className="text-2xl font-semibold text-gray-900">
                 {profile.displayName}
               </h1>
 
@@ -80,12 +118,10 @@ export default async function PublicProfilePage({ params }: Props) {
               )}
             </div>
 
-            {/* Username (optional vibe, looks clean) */}
             {profile.username && (
               <p className="mt-1 text-sm text-gray-500">@{profile.username}</p>
             )}
 
-            {/* Bio */}
             {profile.bio && (
               <p className="mt-3 text-sm leading-relaxed text-gray-600">
                 {profile.bio}
@@ -93,7 +129,6 @@ export default async function PublicProfilePage({ params }: Props) {
             )}
           </div>
 
-          {/* Divider */}
           <div className="h-px w-full bg-gray-100" />
 
           {/* Links */}
@@ -123,6 +158,11 @@ export default async function PublicProfilePage({ params }: Props) {
                     icon = "🌐";
                   }
 
+                  const displayValue = formatLinkValue(
+                    link.type,
+                    link.value
+                  );
+
                   return (
                     <a
                       key={String(link._id)}
@@ -131,7 +171,7 @@ export default async function PublicProfilePage({ params }: Props) {
                       rel="noopener noreferrer"
                       className="group flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 transition hover:border-gray-300 hover:bg-gray-50 active:scale-[0.99]"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span className="grid h-10 w-10 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-lg">
                           {icon}
                         </span>
@@ -141,22 +181,16 @@ export default async function PublicProfilePage({ params }: Props) {
                             {link.label}
                           </div>
                           <div className="truncate text-xs text-gray-500">
-                            {link.type === "phone"
-                              ? link.value
-                              : link.type === "email"
-                              ? link.value
-                              : link.value}
+                            {displayValue}
                           </div>
                         </div>
                       </div>
 
                       <span className="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition group-hover:text-gray-600">
-                        {/* right arrow */}
                         <svg
                           viewBox="0 0 20 20"
                           fill="currentColor"
                           className="h-4 w-4"
-                          aria-hidden="true"
                         >
                           <path
                             fillRule="evenodd"
@@ -172,7 +206,6 @@ export default async function PublicProfilePage({ params }: Props) {
             )}
           </div>
 
-          {/* Footer */}
           {!isPro && (
             <div className="px-6 pb-6">
               <div className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-center">
@@ -187,7 +220,6 @@ export default async function PublicProfilePage({ params }: Props) {
           )}
         </div>
 
-        {/* Bottom spacing / small note */}
         <p className="mt-6 text-center text-[11px] text-gray-400">
           © {new Date().getFullYear()} MyTapCard
         </p>
