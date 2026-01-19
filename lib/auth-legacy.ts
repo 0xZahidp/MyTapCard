@@ -1,7 +1,7 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { cookies } from "next/headers";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET as string;
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined");
@@ -21,7 +21,6 @@ export async function getUserFromToken(): Promise<AuthUser | null> {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
-    // ✅ runtime validation (THIS is what fixes Vercel)
     if (
       typeof decoded !== "object" ||
       !("userId" in decoded) ||
