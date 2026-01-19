@@ -13,14 +13,24 @@ export interface AuthUser extends JwtPayload {
 }
 
 export async function getUserFromToken(): Promise<AuthUser | null> {
-  // Next.js 16: cookies() is async
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) return null;
 
   try {
-    return jwt.verify(token, JWT_SECRET) as AuthUser;
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+
+    // ✅ runtime validation (THIS is what fixes Vercel)
+    if (
+      typeof decoded !== "object" ||
+      !("userId" in decoded) ||
+      !("email" in decoded)
+    ) {
+      return null;
+    }
+
+    return decoded as AuthUser;
   } catch (error) {
     console.error("Invalid JWT:", error);
     return null;
