@@ -1,5 +1,8 @@
 "use client";
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!;
+
+
 import { useEffect, useMemo, useState, FormEvent, ChangeEvent } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -534,9 +537,17 @@ export default function DashboardClient() {
                       className={input}
                       onChange={handleProfileChange}
                     />
-                    <p className="text-xs text-gray-500">
-                      Your public link: mytapcard.com/<b>{form.username || "username"}</b>
-                    </p>
+                        <p className="text-xs text-gray-500">
+                          Your public link:{" "}
+                          <a
+                            href={`${BASE_URL}/${form.username || "username"}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-gray-700 underline underline-offset-4"
+                          >
+                            {BASE_URL.replace(/^https?:\/\//, "")}/{form.username || "username"}
+                          </a>
+                        </p>
                   </div>
 
                   <div className="space-y-1">
