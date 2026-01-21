@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import { safeJson } from "@/lib/dashboard-helpers";
 
-export type Me = { avatar?: string; name?: string; email?: string };
+export type Me = {
+  id?: string;
+  avatar?: string;
+  name?: string;
+  email?: string;
+  plan?: "free" | "pro";
+  isPro?: boolean;
+};
+
 
 export type Profile = { displayName?: string; username?: string; bio?: string };
 

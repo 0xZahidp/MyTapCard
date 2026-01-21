@@ -88,7 +88,7 @@ function PricingCard({
 
       <div className="mt-4 text-3xl font-semibold tracking-tight text-gray-900">
         {price}
-        <span className="text-sm font-medium text-gray-500"> /month</span>
+        <span className="text-sm font-medium text-gray-500"> /year</span>
       </div>
 
       <ul className="mt-4 space-y-2 text-sm text-gray-700">
