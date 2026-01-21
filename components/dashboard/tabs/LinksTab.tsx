@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ui } from "@/components/dashboard/ui";
 import {
-  LinkType,
   isValidEmail,
   isValidPhone,
   normalizeLinkValue,
@@ -57,7 +56,6 @@ function getGroupKeyForLink(l: any) {
   return gidRaw ? String(gidRaw) : OTHER_GROUP_ID;
 }
 
-/** Small drag handle */
 function DragHandle() {
   return (
     <span
@@ -69,7 +67,6 @@ function DragHandle() {
   );
 }
 
-/** Sortable row wrapper */
 function SortableRow({
   id,
   children,
@@ -77,14 +74,8 @@ function SortableRow({
   id: string;
   children: (args: { dragHandleProps: any; isDragging: boolean }) => React.ReactNode;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -105,19 +96,25 @@ export default function LinksTab({
   setBusy,
   setNotice,
   refreshLinks,
+  setLinks,
 }: {
   links: LinkItem[];
   busy: any;
   setBusy: any;
   setNotice: any;
   refreshLinks: () => Promise<void>;
+  setLinks: React.Dispatch<React.SetStateAction<LinkItem[]>>;
 }) {
   const [groups, setGroups] = useState<LinkGroupItem[]>([]);
   const [newGroupName, setNewGroupName] = useState("");
 
-  // Keep a local copy so drag feels instant (parent refresh may lag)
   const [localLinks, setLocalLinks] = useState<LinkItem[]>(links || []);
   useEffect(() => setLocalLinks(links || []), [links]);
+
+  const setLinksBoth = (updater: React.SetStateAction<LinkItem[]>) => {
+    setLocalLinks(updater as any);
+    setLinks(updater as any);
+  };
 
   const [linkForm, setLinkForm] = useState<{
     type: any;
@@ -169,7 +166,6 @@ export default function LinksTab({
       map.get(key)!.push(l);
     }
 
-    // Sort each group by order (and stable fallback)
     for (const [k, arr] of map.entries()) {
       arr.sort((a: any, b: any) => {
         const ao = typeof a?.order === "number" ? a.order : 0;
@@ -179,10 +175,10 @@ export default function LinksTab({
       });
       map.set(k, arr);
     }
+
     return map;
   }, [localLinks]);
 
-  // ---------- GROUP CRUD ----------
   const submitGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
@@ -227,7 +223,6 @@ export default function LinksTab({
     await fetchGroups();
   };
 
-  // ---------- LINKS CRUD ----------
   const submitLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
@@ -285,6 +280,7 @@ export default function LinksTab({
         platform: "",
         isActive: true,
       });
+
       await refreshLinks();
     } finally {
       setBusy((b: any) => ({ ...b, link: false }));
@@ -309,7 +305,6 @@ export default function LinksTab({
     await refreshLinks();
   };
 
-  // ---------- DRAG: GROUPS ----------
   const onDragEndGroups = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -322,7 +317,6 @@ export default function LinksTab({
     const next = arrayMove(groupsSorted, oldIndex, newIndex);
     setGroups(next.map((g, idx) => ({ ...g, order: idx })) as any);
 
-    // Persist
     try {
       await fetch("/api/link-groups/reorder-bulk", {
         method: "POST",
@@ -335,7 +329,6 @@ export default function LinksTab({
     }
   };
 
-  // ---------- DRAG: LINKS (within a group) ----------
   const onDragEndLinks = async (groupKey: string, event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -349,18 +342,17 @@ export default function LinksTab({
 
     const nextList = arrayMove(list, oldIndex, newIndex);
 
-    // Optimistically update localLinks
-    setLocalLinks((prev) => {
-      const next = [...prev];
+    setLinksBoth((prev) => {
+      const prevArr = Array.isArray(prev) ? prev : [];
       const nextIds = new Set(nextList.map((x: any) => String(x._id)));
 
-      // keep items not in this group as-is
-      const others = next.filter((x: any) => !nextIds.has(String(x._id)));
+      const others = prevArr.filter((x: any) => !nextIds.has(String(x._id)));
+      const reordered = nextList.map((x: any, idx: number) => ({
+        ...x,
+        order: idx,
+      }));
 
-      // rewrite order on reordered items
-      const reordered = nextList.map((x: any, idx: number) => ({ ...x, order: idx }));
-
-      return [...others, ...reordered];
+      return [...others, ...reordered] as any;
     });
 
     const groupIdPayload = groupKey === OTHER_GROUP_ID ? null : groupKey;
@@ -382,7 +374,6 @@ export default function LinksTab({
 
   return (
     <section className="space-y-4">
-      {/* Groups */}
       <section className={ui.card}>
         <div className={ui.cardPad}>
           <div className="flex items-start justify-between gap-3">
@@ -413,7 +404,9 @@ export default function LinksTab({
             {groupsSorted.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
                 <p className="text-sm font-semibold text-gray-900">No groups yet</p>
-                <p className="mt-1 text-xs text-gray-500">Create a group to organize links.</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Create a group to organize links.
+                </p>
               </div>
             ) : (
               <DndContext
@@ -431,7 +424,10 @@ export default function LinksTab({
                         {({ dragHandleProps }) => (
                           <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
                             <div className="flex items-center gap-3 min-w-0">
-                              <span {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                              <span
+                                {...dragHandleProps}
+                                className="cursor-grab active:cursor-grabbing"
+                              >
                                 <DragHandle />
                               </span>
 
@@ -466,7 +462,6 @@ export default function LinksTab({
         </div>
       </section>
 
-      {/* Links */}
       <section className={ui.card}>
         <div className={ui.cardPad}>
           <div className="flex items-start justify-between gap-3">
@@ -488,7 +483,9 @@ export default function LinksTab({
               <select
                 value={linkForm.groupId}
                 className={ui.select}
-                onChange={(e) => setLinkForm((f) => ({ ...f, groupId: e.target.value }))}
+                onChange={(e) =>
+                  setLinkForm((f) => ({ ...f, groupId: e.target.value }))
+                }
               >
                 <option value={OTHER_GROUP_ID}>Other (no group)</option>
                 {groupsSorted.map((g) => (
@@ -504,7 +501,9 @@ export default function LinksTab({
               <select
                 value={linkForm.type}
                 className={ui.select}
-                onChange={(e) => setLinkForm((f) => ({ ...f, type: e.target.value }))}
+                onChange={(e) =>
+                  setLinkForm((f) => ({ ...f, type: e.target.value }))
+                }
               >
                 <option value="">Select type</option>
                 <option value="url">URL</option>
@@ -522,7 +521,9 @@ export default function LinksTab({
                 value={linkForm.platform}
                 placeholder="whatsapp, telegram, facebook, linkedin, x, instagram..."
                 className={ui.input}
-                onChange={(e) => setLinkForm((f) => ({ ...f, platform: e.target.value }))}
+                onChange={(e) =>
+                  setLinkForm((f) => ({ ...f, platform: e.target.value }))
+                }
               />
               <p className="mt-1 text-[11px] text-gray-500">
                 Tip: For Social/Messaging, you can enter username (zahid) or full URL.
@@ -535,7 +536,9 @@ export default function LinksTab({
                 value={linkForm.label}
                 placeholder="Website, WhatsApp, Email…"
                 className={ui.input}
-                onChange={(e) => setLinkForm((f) => ({ ...f, label: e.target.value }))}
+                onChange={(e) =>
+                  setLinkForm((f) => ({ ...f, label: e.target.value }))
+                }
               />
             </div>
 
@@ -547,11 +550,13 @@ export default function LinksTab({
                   linkForm.type === "email"
                     ? "email@domain.com"
                     : linkForm.type === "phone"
-                    ? "+880..."
-                    : "https://... or username"
+                      ? "+880..."
+                      : "https://... or username"
                 }
                 className={ui.input}
-                onChange={(e) => setLinkForm((f) => ({ ...f, value: e.target.value }))}
+                onChange={(e) =>
+                  setLinkForm((f) => ({ ...f, value: e.target.value }))
+                }
               />
             </div>
 
@@ -560,7 +565,6 @@ export default function LinksTab({
             </button>
           </form>
 
-          {/* LIST (grouped) */}
           <div className="mt-6 space-y-4">
             {groupsWithOther.map((g) => {
               const title = g._id === OTHER_GROUP_ID ? "Other" : g.name;
@@ -573,7 +577,9 @@ export default function LinksTab({
                     <div className="text-sm font-semibold text-gray-900">
                       {title}{" "}
                       {g._id !== OTHER_GROUP_ID && !g.isActive && (
-                        <span className="text-xs font-medium text-gray-500">(Hidden)</span>
+                        <span className="text-xs font-medium text-gray-500">
+                          (Hidden)
+                        </span>
                       )}
                     </div>
                   </div>
@@ -588,14 +594,20 @@ export default function LinksTab({
                       collisionDetection={closestCenter}
                       onDragEnd={(e) => onDragEndLinks(g._id, e)}
                     >
-                      <SortableContext items={linkIds} strategy={verticalListSortingStrategy}>
+                      <SortableContext
+                        items={linkIds}
+                        strategy={verticalListSortingStrategy}
+                      >
                         <div className="space-y-2">
                           {list.map((link: any) => (
                             <SortableRow key={String(link._id)} id={String(link._id)}>
                               {({ dragHandleProps }) => (
                                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 transition hover:bg-gray-50">
                                   <div className="flex items-center gap-3 min-w-0">
-                                    <span {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                    <span
+                                      {...dragHandleProps}
+                                      className="cursor-grab active:cursor-grabbing"
+                                    >
                                       <DragHandle />
                                     </span>
 
@@ -603,10 +615,14 @@ export default function LinksTab({
                                       <div className="truncate text-sm font-semibold text-gray-900">
                                         {link.label}{" "}
                                         {!link.isActive && (
-                                          <span className="text-xs font-medium text-gray-500">(Hidden)</span>
+                                          <span className="text-xs font-medium text-gray-500">
+                                            (Hidden)
+                                          </span>
                                         )}
                                       </div>
-                                      <div className="truncate text-xs text-gray-500">{link.value}</div>
+                                      <div className="truncate text-xs text-gray-500">
+                                        {link.value}
+                                      </div>
                                     </div>
                                   </div>
 
@@ -614,7 +630,9 @@ export default function LinksTab({
                                     <button
                                       type="button"
                                       className={ui.miniBtn}
-                                      onClick={() => toggleLink(String(link._id), !link.isActive)}
+                                      onClick={() =>
+                                        toggleLink(String(link._id), !link.isActive)
+                                      }
                                     >
                                       {link.isActive ? "Hide" : "Show"}
                                     </button>

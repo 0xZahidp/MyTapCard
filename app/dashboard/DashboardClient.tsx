@@ -97,6 +97,7 @@ export default function DashboardClient() {
               setLinks={setLinks}
             />
           )}
+
           {activeTab === "financial" && <FinancialTab />}
 
           {activeTab === "design" && <DesignTab />}

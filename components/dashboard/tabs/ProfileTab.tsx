@@ -5,9 +5,7 @@ import { ui } from "@/components/dashboard/ui";
 import { cx, normalizeUsername, safeJson } from "@/lib/dashboard-helpers";
 import type { Me, Profile } from "@/hooks/useDashboardData";
 
-const BASE_URL_FALLBACK =
-  typeof window !== "undefined" ? window.location.origin : "";
-
+const BASE_URL_FALLBACK = typeof window !== "undefined" ? window.location.origin : "";
 const ENV_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
 
 function baseUrl() {
@@ -30,8 +28,10 @@ export default function ProfileTab({
   setBusy: any;
   setNotice: any;
   refreshMe: () => Promise<void>;
-  setProfile: (p: Profile | null) => void;
-  setMe: (m: Me | null) => void;
+
+  // ✅ FIX: allow functional updates (no feature change)
+  setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
+  setMe: React.Dispatch<React.SetStateAction<Me | null>>;
 }) {
   const [form, setForm] = useState({
     displayName: "",
