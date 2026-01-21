@@ -1,3 +1,5 @@
+// lib/dashboard-helpers.ts
+
 export function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
@@ -40,4 +42,22 @@ export function normalizeLinkValue(type: Exclude<LinkType, "">, value: string) {
   if (type === "email") return v.toLowerCase();
 
   return v; // phone
+}
+
+/**
+ * ✅ Returns your site's base URL (works on Vercel + locally).
+ * - Client: uses window.location.origin
+ * - Server/build: uses env vars (recommended to set NEXT_PUBLIC_SITE_URL)
+ */
+export function getBaseUrl(): string {
+  // Client-side
+  if (typeof window !== "undefined") return window.location.origin;
+
+  // Server/build-time fallbacks
+  const envUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXTAUTH_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+
+  return envUrl || "http://localhost:3000";
 }
