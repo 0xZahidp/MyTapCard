@@ -9,7 +9,8 @@ export type DashboardTabKey =
   | "design"
   | "share"
   | "preview"
-  | "payment";
+  | "payment"
+  | "financial";
 
 const tabs: Array<{ key: DashboardTabKey; label: string }> = [
   { key: "profile", label: "Profile" },
@@ -18,6 +19,7 @@ const tabs: Array<{ key: DashboardTabKey; label: string }> = [
   { key: "share", label: "Share" },
   { key: "preview", label: "Preview" },
   { key: "payment", label: "Payment" },
+  { key: "financial", label: "Financial" },
 ];
 
 export default function DashboardTabs({

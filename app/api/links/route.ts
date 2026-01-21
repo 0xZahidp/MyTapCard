@@ -43,6 +43,18 @@ async function getAuthedUserId(): Promise<string | null> {
   }
 }
 
+const STRICT_TYPES = new Set(["url", "phone", "email"]);
+const ALLOWED_TYPES = new Set([
+  "url",
+  "phone",
+  "email",
+  "sms",
+  "social",
+  "messaging",
+  "video",
+  "vcard",
+]);
+
 export async function POST(req: Request) {
   try {
     await dbConnect();
@@ -53,9 +65,16 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { type, label, value } = body ?? {};
+    const {
+      type,
+      label,
+      value,
+      groupId = null,
+      platform = "",
+      meta = {},
+      isActive = true,
+    } = body ?? {};
 
-    // Basic presence check
     if (!type || !label || !value) {
       return NextResponse.json(
         { message: "type, label, and value are required" },
@@ -63,15 +82,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Validate + normalize (URL/email/phone)
-    let normalized;
-    try {
-      normalized = normalizeAndValidateLink({ type, label, value });
-    } catch (e: any) {
-      return NextResponse.json(
-        { message: e?.message || "Invalid link input" },
-        { status: 400 }
-      );
+    const t = String(type);
+    if (!ALLOWED_TYPES.has(t)) {
+      return NextResponse.json({ message: "Invalid type" }, { status: 400 });
     }
 
     const profile = await Profile.findOne({ userId }).select("_id").lean();
@@ -82,22 +95,35 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Free plan max 3 links
+    // ✅ Free plan max 3 links (same as now)
     const subscription = await Subscription.findOne({ userId }).lean();
     const plan = (subscription?.plan ?? "free") as string;
 
     const linkCount = await Link.countDocuments({ profileId: profile._id });
-    if (plan === "free" && linkCount >= 3) {
+    if (plan === "free" && linkCount >= 6) {
       return NextResponse.json(
         {
-          message: "Free plan allows only 3 links. Upgrade to Pro to add more.",
+          message:
+            "Free plan allows only 3 links. Upgrade to Pro to add more.",
         },
         { status: 403 }
       );
     }
 
-    // next order
-    const lastLink = await Link.findOne({ profileId: profile._id })
+    // ✅ Validate + normalize for url/email/phone only
+    let normalized: { type: string; label: string; value: string };
+    if (STRICT_TYPES.has(t)) {
+      normalized = normalizeAndValidateLink({ type: t, label, value });
+    } else {
+      normalized = {
+        type: t,
+        label: String(label).trim(),
+        value: String(value).trim(),
+      };
+    }
+
+    // ✅ next order INSIDE group
+    const lastLink = await Link.findOne({ profileId: profile._id, groupId })
       .sort({ order: -1 })
       .select("order")
       .lean();
@@ -107,18 +133,21 @@ export async function POST(req: Request) {
 
     const link = await Link.create({
       profileId: profile._id,
+      groupId,
+      platform,
+      meta,
       type: normalized.type,
       label: normalized.label,
       value: normalized.value,
       order: nextOrder,
-      isActive: true,
+      isActive: !!isActive,
     });
 
     return NextResponse.json(link, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
     return NextResponse.json(
-      { message: "Something went wrong" },
+      { message: err?.message || "Something went wrong" },
       { status: 500 }
     );
   }
@@ -137,7 +166,7 @@ export async function GET() {
     if (!profile) return NextResponse.json([]);
 
     const links = await Link.find({ profileId: profile._id })
-      .sort({ order: 1 })
+      .sort({ groupId: 1, order: 1 })
       .lean();
 
     return NextResponse.json(links);

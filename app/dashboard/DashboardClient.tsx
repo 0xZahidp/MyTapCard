@@ -10,6 +10,7 @@ import ShareTab from "@/components/dashboard/tabs/ShareTab";
 import DesignTab from "@/components/dashboard/tabs/DesignTab";
 import PreviewTab from "@/components/dashboard/tabs/PreviewTab";
 import PaymentsTab from "@/components/dashboard/tabs/PaymentsTab";
+import FinancialTab from "@/components/dashboard/tabs/FinancialTab";
 
 import { cx } from "@/lib/dashboard-helpers";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -96,6 +97,7 @@ export default function DashboardClient() {
               setLinks={setLinks}
             />
           )}
+          {activeTab === "financial" && <FinancialTab />}
 
           {activeTab === "design" && <DesignTab />}
 

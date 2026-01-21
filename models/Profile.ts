@@ -36,6 +36,11 @@ const ProfileSchema = new Schema(
       trim: true,
     },
 
+    showFinancialTab: {
+      type: Boolean,
+      default: true,
+    },
+    
     isActive: {
       type: Boolean,
       default: true,

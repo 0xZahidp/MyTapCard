@@ -6,11 +6,9 @@ import dbConnect from "@/lib/mongodb";
 import Link from "@/models/Link";
 import Profile from "@/models/Profile";
 import User from "@/models/User";
-
 import { auth } from "@/lib/auth";
 
 export const runtime = "nodejs";
-
 const JWT_SECRET = process.env.JWT_SECRET;
 
 async function getAuthedUserId(): Promise<string | null> {
@@ -21,7 +19,9 @@ async function getAuthedUserId(): Promise<string | null> {
 
   if (sessionEmail) {
     await dbConnect();
-    const user = await User.findOne({ email: sessionEmail }).select("_id").lean();
+    const user = await User.findOne({ email: sessionEmail })
+      .select("_id")
+      .lean();
     return user ? String(user._id) : null;
   }
 
@@ -53,18 +53,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Invalid request" }, { status: 400 });
     }
 
-    const profile = await Profile.findOne({ userId }).lean();
+    const profile = await Profile.findOne({ userId }).select("_id").lean();
     if (!profile) {
       return NextResponse.json({ message: "Profile not found" }, { status: 404 });
     }
 
+    // ✅ ensure link belongs to this profile
     const link = await Link.findOne({ _id: id, profileId: profile._id });
     if (!link) {
       return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
 
+    // ✅ group-aware swap
     const swapWith = await Link.findOne({
       profileId: profile._id,
+      groupId: link.groupId ?? null,
       order: direction === "up" ? link.order - 1 : link.order + 1,
     });
 
@@ -78,7 +81,8 @@ export async function POST(req: Request) {
     await swapWith.save();
 
     return NextResponse.json({ message: "Reordered" });
-  } catch {
+  } catch (e) {
+    console.error(e);
     return NextResponse.json({ message: "Error" }, { status: 500 });
   }
 }
