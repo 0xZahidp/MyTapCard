@@ -45,7 +45,7 @@ export async function POST(
         at: new Date(),
         status: nextStatus,
         note: note || `Status changed to ${nextStatus}`,
-        byAdminEmail: String(admin.email || ""),
+        byAdminEmail: String(admin.adminEmail || ""),
       },
     },
   };
