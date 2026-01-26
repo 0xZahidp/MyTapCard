@@ -2,12 +2,16 @@
 
 import AuthCard from "@/components/auth/AuthCard";
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
-
+import { safeNext } from "@/lib/next-url";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const nextUrl = safeNext(nextParam, "/dashboard");
+
   const passwordRef = useRef<HTMLInputElement | null>(null);
 
   const [name, setName] = useState("");
@@ -23,9 +27,6 @@ export default function RegisterPage() {
 
   const softBtn =
     "w-full rounded-2xl border border-gray-200 bg-white py-3 text-sm font-semibold text-gray-900 transition hover:bg-gray-50 active:scale-[0.99] disabled:opacity-60";
-
-  const oauthBtn =
-    "w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 transition hover:bg-gray-50 active:scale-[0.99] disabled:opacity-60 flex items-center justify-center gap-2";
 
   const dividerWrap = "relative my-5";
   const dividerLine = "h-px w-full bg-gray-200";
@@ -50,11 +51,11 @@ export default function RegisterPage() {
 
       const data = await res.json().catch(() => ({ message: "Invalid response" }));
 
-      // clear password ASAP (success or fail)
       if (passwordRef.current) passwordRef.current.value = "";
 
       if (res.ok) {
-        router.push("/login");
+        // keep it simple: redirect user to login with the correct next url
+        router.push(`/login?next=${encodeURIComponent(nextUrl)}`);
       } else {
         alert(data.message || "Registration failed");
       }
@@ -66,28 +67,11 @@ export default function RegisterPage() {
     }
   };
 
-  const handleOAuth = async (provider: "google" | "facebook") => {
-    if (loading || oauthLoading) return;
-    setOauthLoading(provider);
-
-    try {
-      // Option A: simple redirect to your backend oauth route
-      window.location.href = provider === "google" ? "/api/auth/google" : "/api/auth/facebook";
-
-      // Option B: NextAuth (uncomment import above) — choose your callback:
-      // await signIn(provider, { callbackUrl: "/dashboard" });
-    } catch {
-      alert("Could not start social login. Please try again.");
-      setOauthLoading(null);
-    }
-  };
-
   const isBusy = loading || oauthLoading !== null;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 flex items-center justify-center px-4 py-10">
       <AuthCard>
-        {/* Small brand header */}
         <div className="text-center">
           <div className="mx-auto mb-3 inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900">
             MyTapCard
@@ -97,22 +81,19 @@ export default function RegisterPage() {
             Create account
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Register to start using MyTapCard.
+            Register to continue.
           </p>
         </div>
 
         <div className="mt-6">
-          <SocialAuthButtons callbackUrl="/dashboard" variant="compact" />
+          <SocialAuthButtons callbackUrl={nextUrl} variant="compact" />
         </div>
 
-
-        {/* Divider */}
         <div className={dividerWrap}>
           <div className={dividerLine} />
           <div className={dividerText}>or</div>
         </div>
 
-        {/* Email register */}
         <form className="space-y-4" onSubmit={handleSubmit} autoComplete="on">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-700">Name</label>
@@ -164,7 +145,7 @@ export default function RegisterPage() {
 
           <button
             type="button"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(`/login?next=${encodeURIComponent(nextUrl)}`)}
             className={softBtn}
             disabled={isBusy}
           >
