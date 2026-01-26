@@ -8,16 +8,16 @@ import Coupon from "@/models/Coupon";
 import { auth } from "@/lib/auth";
 import { getUserFromToken } from "@/lib/auth-legacy";
 
-async function getAuthedEmail() {
+async function getAuthedEmail(): Promise<string | null> {
   // ✅ NextAuth session (Google/Facebook)
   const session = await auth();
   const sessionEmail =
     (session?.user as any)?.email || (session?.user as any)?.emailAddress;
-  if (sessionEmail) return sessionEmail;
+  if (sessionEmail) return String(sessionEmail);
 
   // ✅ Legacy JWT cookie (reads via next/headers cookies())
   const legacy = await getUserFromToken();
-  return legacy?.email || null;
+  return legacy?.email ? String(legacy.email) : null;
 }
 
 function toStr(v: any) {
@@ -28,17 +28,18 @@ function bad(message: string, status = 400, extra?: any) {
   return NextResponse.json({ message, ...(extra || {}) }, { status });
 }
 
+type CartItem = { productId: string; qty: number };
+
 export async function POST(req: Request) {
   await dbConnect();
 
-  // ✅ no req arg anymore
   const email = await getAuthedEmail();
   if (!email) return bad("Unauthorized", 401);
 
-  const body = await req.json().catch(() => ({} as any));
+  const body = (await req.json().catch(() => ({} as any))) as any;
 
   // Accept either `items` or `cartItems` from client (and old `cart` if present)
-  const incoming = Array.isArray(body.items)
+  const incoming: any[] = Array.isArray(body.items)
     ? body.items
     : Array.isArray(body.cartItems)
     ? body.cartItems
@@ -49,35 +50,37 @@ export async function POST(req: Request) {
   if (!incoming.length) return bad("Cart is empty", 400);
 
   // Normalize to [{ productId, qty }]
-  const cart = incoming
+  const cart: CartItem[] = incoming
     .map((x: any) => ({
       productId: toStr(x.productId || x._id || x.id),
       qty: Number(x.qty ?? x.quantity ?? 1),
     }))
-    .filter((x: any) => x.productId && Number.isFinite(x.qty) && x.qty > 0);
+    .filter((x: CartItem) => x.productId && Number.isFinite(x.qty) && x.qty > 0);
 
   if (!cart.length) return bad("Invalid cart items", 400);
 
   // Fetch products and build snapshot items
-  const ids = [...new Set(cart.map((c) => c.productId))];
+  const ids: string[] = [...new Set(cart.map((c: CartItem) => c.productId))];
 
-  const products = await Product.find({
+  const products: any[] = await Product.find({
     _id: { $in: ids },
     isActive: true,
   })
     .select("name sku price currency images")
     .lean();
 
-  const byId = new Map(products.map((p: any) => [String(p._id), p]));
+  const byId = new Map<string, any>(products.map((p: any) => [String(p._id), p]));
 
   const missing = ids.filter((id) => !byId.has(id));
   if (missing.length) {
-    return bad("Some products are unavailable", 400, { missingProductIds: missing });
+    return bad("Some products are unavailable", 400, {
+      missingProductIds: missing,
+    });
   }
 
   const currency = products[0]?.currency || "USD";
 
-  const items = cart.map((c) => {
+  const items = cart.map((c: CartItem) => {
     const p: any = byId.get(c.productId);
     return {
       productId: p._id,
@@ -89,7 +92,7 @@ export async function POST(req: Request) {
     };
   });
 
-  const subtotal = items.reduce((sum, it) => sum + it.unitPrice * it.qty, 0);
+  const subtotal = items.reduce((sum: number, it: any) => sum + it.unitPrice * it.qty, 0);
 
   // Shipping optional
   const shipping = Number(body.shipping ?? 0) || 0;
@@ -148,7 +151,7 @@ export async function POST(req: Request) {
   const total = Math.max(0, subtotal - discount + shipping);
 
   const order = await Order.create({
-    userEmail: email,
+    userEmail: String(email).trim().toLowerCase(),
     items,
     subtotal,
     discount,
@@ -169,9 +172,7 @@ export async function POST(req: Request) {
     paymentRef: body.paymentRef || "",
 
     fulfillmentStatus: "created",
-    timeline: [
-      { at: new Date(), status: "created", note: "Order created", byAdminEmail: "" },
-    ],
+    timeline: [{ at: new Date(), status: "created", note: "Order created", byAdminEmail: "" }],
 
     customer: body.customer || undefined,
   });
