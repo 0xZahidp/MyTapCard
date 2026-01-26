@@ -12,11 +12,15 @@ function bad(message: string, status = 400) {
 export async function GET() {
   await dbConnect();
 
-  const email = await getAuthedEmail();
+  const emailRaw = await getAuthedEmail();
+  const email = typeof emailRaw === "string" ? emailRaw.trim().toLowerCase() : "";
+
   if (!email) return bad("Unauthorized", 401);
 
-  const orders = await Order.find({ userEmail: String(email).toLowerCase() })
-    .select("items total currency paymentStatus paymentProvider fulfillmentStatus createdAt")
+  const orders = await Order.find({ userEmail: email })
+    .select(
+      "items total currency paymentStatus paymentProvider fulfillmentStatus createdAt"
+    )
     .sort({ createdAt: -1 })
     .lean();
 

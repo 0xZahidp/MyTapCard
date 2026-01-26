@@ -11,10 +11,14 @@ function bad(message: string, status = 400) {
   return NextResponse.json({ ok: false, message }, { status });
 }
 
-export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> }
+) {
   await dbConnect();
 
-  const email = await getAuthedEmail();
+  const emailRaw = await getAuthedEmail();
+  const email = typeof emailRaw === "string" ? emailRaw.trim().toLowerCase() : "";
   if (!email) return bad("Unauthorized", 401);
 
   const { id } = await ctx.params;
@@ -29,14 +33,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   if (!order) return bad("Not found", 404);
 
-  const viewer = String(email).toLowerCase();
-  const owner = String(order.userEmail).toLowerCase();
+  const owner = String(order.userEmail || "").trim().toLowerCase();
 
-  const isOwner = owner === viewer;
+  const isOwner = owner === email;
   const isAdmin = isAdminEmail(email);
 
   if (!isOwner && !isAdmin) return bad("Forbidden", 403);
 
+  // Don’t leak user email to the owner response if you don’t want
   if (!isAdmin) delete order.userEmail;
 
   return NextResponse.json({ ok: true, order });

@@ -8,13 +8,15 @@ import Coupon from "@/models/Coupon";
 import { auth } from "@/lib/auth";
 import { getUserFromToken } from "@/lib/auth-legacy";
 
-async function getAuthedEmail(req: Request) {
+async function getAuthedEmail() {
+  // ✅ NextAuth session (Google/Facebook)
   const session = await auth();
   const sessionEmail =
     (session?.user as any)?.email || (session?.user as any)?.emailAddress;
   if (sessionEmail) return sessionEmail;
 
-  const legacy = await getUserFromToken(req);
+  // ✅ Legacy JWT cookie (reads via next/headers cookies())
+  const legacy = await getUserFromToken();
   return legacy?.email || null;
 }
 
@@ -29,7 +31,8 @@ function bad(message: string, status = 400, extra?: any) {
 export async function POST(req: Request) {
   await dbConnect();
 
-  const email = await getAuthedEmail(req);
+  // ✅ no req arg anymore
+  const email = await getAuthedEmail();
   if (!email) return bad("Unauthorized", 401);
 
   const body = await req.json().catch(() => ({} as any));
@@ -113,7 +116,6 @@ export async function POST(req: Request) {
     }
 
     if (c.type === "percent") {
-      // optional guard
       const pct = Number(c.value || 0);
       if (pct < 0 || pct > 100) return bad("Invalid coupon config", 400);
       discount = (subtotal * pct) / 100;
@@ -121,7 +123,6 @@ export async function POST(req: Request) {
       discount = Number(c.value || 0);
     }
 
-    // ✅ optional maxDiscount cap (works only if field exists; otherwise it becomes 0)
     const cap = Number(c.maxDiscount || 0);
     if (cap > 0) discount = Math.min(discount, cap);
 
@@ -130,8 +131,7 @@ export async function POST(req: Request) {
 
     couponCode = c.code;
 
-    // ✅ increment usedCount only when order is created
-    // simple + safe-enough check so it won't exceed maxUses
+    // increment usedCount only when order is created
     if (c.maxUses && c.maxUses > 0) {
       const updated = await Coupon.updateOne(
         { _id: c._id, usedCount: { $lt: c.maxUses } },
@@ -173,7 +173,6 @@ export async function POST(req: Request) {
       { at: new Date(), status: "created", note: "Order created", byAdminEmail: "" },
     ],
 
-    // keep customer snapshot if your schema supports it (optional)
     customer: body.customer || undefined,
   });
 
