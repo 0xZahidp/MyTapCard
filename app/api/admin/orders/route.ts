@@ -12,7 +12,7 @@ function bad(message: string, status = 400) {
 export async function GET(req: Request) {
   await dbConnect();
 
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin();
   if (!admin.ok) return bad(admin.message || "Forbidden", admin.status || 403);
 
   const url = new URL(req.url);

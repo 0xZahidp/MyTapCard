@@ -23,7 +23,7 @@ export async function POST(
 ) {
   await dbConnect();
 
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin();
   if (!admin.ok) return bad(admin.message || "Forbidden", admin.status || 403);
 
   const { id } = await ctx.params;
