@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   await dbConnect();
 
   const admin = await requireAdmin();
-  if (!admin.ok) return bad(admin.message || "Forbidden", admin.status || 403);
+  if (!admin.ok) return admin.res;
 
   const url = new URL(req.url);
   const q = String(url.searchParams.get("q") || "").trim();
