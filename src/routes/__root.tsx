@@ -96,6 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     links: [
+      { rel: "icon", href: "/favicon.ico" },
       { rel: "stylesheet", href: appCss },
       { rel: "canonical", href: "https://mytapcard.com/" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
