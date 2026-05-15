@@ -2,9 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useProStatus } from "@/hooks/use-pro";
 import { Button } from "@/components/ui/button";
 import {
+  AlertTriangle,
+  CalendarClock,
   Copy,
+  Crown,
   ExternalLink,
   Link2,
   QrCode,
@@ -23,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function DashboardPage() {
   const { user } = useAuth();
+  const { isPro, isTrial, proUntil } = useProStatus();
   const [profile, setProfile] = useState<any>(null);
   const [counts, setCounts] = useState({ links: 0, financial: 0 });
 
@@ -43,6 +48,12 @@ function DashboardPage() {
   }, [user]);
 
   const publicUrl = profile?.username ? `${window.location.origin}/${profile.username}` : null;
+  const daysLeft = proUntil
+    ? Math.max(0, Math.ceil((new Date(proUntil).getTime() - Date.now()) / 86400000))
+    : null;
+  const expiryLabel = isTrial ? "trial" : "Pro";
+  const showExpiryNotice = isPro && proUntil && daysLeft !== null;
+  const isExpiringSoon = showExpiryNotice && daysLeft <= 7;
 
   const tiles = [
     { to: "/profile", label: "Profile", icon: User, desc: "Name, bio, avatar" },
@@ -72,6 +83,44 @@ function DashboardPage() {
         </h1>
         <p className="mt-1 text-muted-foreground">Manage your tap card from here.</p>
       </header>
+
+      {showExpiryNotice && (
+        <section
+          className={`flex flex-wrap items-center gap-3 rounded-2xl border p-4 shadow-soft ${
+            isExpiringSoon ? "border-amber-300 bg-amber-50 text-amber-950" : "border-border bg-card"
+          }`}
+        >
+          {isExpiringSoon ? (
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+          ) : (
+            <CalendarClock className="h-5 w-5 shrink-0 text-primary" />
+          )}
+          <div className="min-w-0 flex-1 text-sm">
+            <div className="flex flex-wrap items-center gap-2 font-semibold">
+              <span>
+                Your {expiryLabel}{" "}
+                {daysLeft <= 0 ? "expires today" : isExpiringSoon ? "expires soon" : "is active"}
+              </span>
+              {!isTrial && <Crown className="h-4 w-4 text-yellow-500" />}
+            </div>
+            <div className={isExpiringSoon ? "text-amber-900/80" : "text-muted-foreground"}>
+              {daysLeft <= 0
+                ? "Renew now to keep Pro features active."
+                : isExpiringSoon
+                  ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left. Upgrade or renew to avoid losing Pro features.`
+                  : `Expires on ${new Date(proUntil).toLocaleDateString()}. We'll alert you again when it gets close.`}
+            </div>
+          </div>
+          <Button
+            asChild
+            variant={isExpiringSoon ? "outline" : "hero"}
+            size="sm"
+            className={isExpiringSoon ? "border-amber-400 bg-white" : undefined}
+          >
+            <Link to="/subscription">{isExpiringSoon ? "Renew" : "Manage"}</Link>
+          </Button>
+        </section>
+      )}
 
       {publicUrl ? (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft">

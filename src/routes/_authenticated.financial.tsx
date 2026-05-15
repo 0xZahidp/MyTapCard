@@ -50,8 +50,25 @@ const TYPES = [
   { value: "btc", label: "Bitcoin" },
   { value: "eth", label: "Ethereum" },
   { value: "usdt", label: "USDT" },
+  { value: "binance", label: "Binance" },
   { value: "custom", label: "Custom (Pro)" },
 ];
+
+const PHONE_COUNTRIES = [
+  { code: "+880", label: "BD +880" },
+  { code: "+1", label: "US/CA +1" },
+  { code: "+44", label: "UK +44" },
+  { code: "+91", label: "IN +91" },
+  { code: "+92", label: "PK +92" },
+  { code: "+971", label: "UAE +971" },
+  { code: "+966", label: "SA +966" },
+  { code: "+60", label: "MY +60" },
+  { code: "+65", label: "SG +65" },
+  { code: "+61", label: "AU +61" },
+  { code: "+49", label: "DE +49" },
+];
+
+const MOBILE_MONEY_TYPES = new Set(["bkash", "nagad", "rocket", "upay"]);
 
 function FinancialPage() {
   const { user } = useAuth();
@@ -298,11 +315,19 @@ function FinancialPage() {
                 </div>
               ) : (
                 <div className="mt-2 grid gap-2">
-                  <Input
-                    placeholder={placeholderFor(m.type)}
-                    value={m.value}
-                    onChange={(e) => updateMethod(m.id, { value: e.target.value })}
-                  />
+                  {MOBILE_MONEY_TYPES.has(m.type) ? (
+                    <PhoneNumberInput
+                      value={m.value}
+                      onChange={(value) => updateMethod(m.id, { value })}
+                      placeholder={placeholderFor(m.type)}
+                    />
+                  ) : (
+                    <Input
+                      placeholder={placeholderFor(m.type)}
+                      value={m.value}
+                      onChange={(e) => updateMethod(m.id, { value: e.target.value })}
+                    />
+                  )}
                   <Textarea
                     rows={2}
                     placeholder="Note (optional, e.g. preferred memo)"
@@ -332,16 +357,82 @@ function placeholderFor(type: string) {
     case "nagad":
     case "rocket":
     case "upay":
-      return "01XXXXXXXXX (mobile number)";
+      return "1712345678";
     case "iban":
       return "IBAN or account number";
     case "btc":
     case "eth":
     case "usdt":
+    case "binance":
       return "Wallet address";
     case "custom":
       return "Anything — link, address, instructions…";
     default:
       return "Details";
   }
+}
+
+function PhoneNumberInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const selected = detectDialCode(value) ?? "+880";
+  const localValue = getLocalPhoneValue(value, selected);
+
+  return (
+    <div className="space-y-1">
+      <div className="grid gap-2 sm:grid-cols-[140px_1fr]">
+        <Select
+          value={selected}
+          onValueChange={(code) => onChange(formatInternationalPhone(localValue, code))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PHONE_COUNTRIES.map((country) => (
+              <SelectItem key={country.code} value={country.code}>
+                {country.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          inputMode="tel"
+          placeholder={placeholder}
+          value={localValue}
+          onChange={(e) => onChange(formatInternationalPhone(e.target.value, selected))}
+          onBlur={(e) => onChange(formatInternationalPhone(e.target.value, selected))}
+        />
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Saved as {formatInternationalPhone(localValue, selected) || "an international number"}.
+      </p>
+    </div>
+  );
+}
+
+function detectDialCode(value: string) {
+  const compact = value.replace(/[^\d+]/g, "");
+  return PHONE_COUNTRIES.find((country) => compact.startsWith(country.code))?.code ?? null;
+}
+
+function getLocalPhoneValue(value: string, dialCode: string) {
+  const compact = value.trim().replace(/[^\d+]/g, "");
+  if (compact.startsWith(dialCode)) return compact.slice(dialCode.length);
+  if (compact.startsWith("+")) return compact;
+  return compact.replace(/^0+/, "");
+}
+
+function formatInternationalPhone(value: string, dialCode: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("+")) return `+${trimmed.slice(1).replace(/\D/g, "")}`;
+  const digits = trimmed.replace(/\D/g, "").replace(/^0+/, "");
+  return digits ? `${dialCode}${digits}` : "";
 }

@@ -16,6 +16,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-passw
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated.subscription'
 import { Route as AuthenticatedShareRouteImport } from './routes/_authenticated.share'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
@@ -59,6 +60,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   id: '/auth/forgot-password',
   path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSubscriptionRoute =
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/share': typeof AuthenticatedShareRoute
   '/subscription': typeof AuthenticatedSubscriptionRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/share': typeof AuthenticatedShareRoute
   '/subscription': typeof AuthenticatedSubscriptionRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/share': typeof AuthenticatedShareRoute
   '/_authenticated/subscription': typeof AuthenticatedSubscriptionRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/share'
     | '/subscription'
+    | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/share'
     | '/subscription'
+    | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/share'
     | '/_authenticated/subscription'
+    | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   UsernameRoute: typeof UsernameRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthCallbackRoute: typeof AuthCallbackRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
@@ -286,6 +299,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/forgot-password'
       fullPath: '/auth/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/subscription': {
@@ -395,6 +415,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UsernameRoute: UsernameRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthCallbackRoute: AuthCallbackRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,

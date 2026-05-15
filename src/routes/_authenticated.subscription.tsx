@@ -6,7 +6,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Check, Clock, Sparkles, ShieldCheck, X, Repeat, Ban } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Crown, Check, Clock, Sparkles, ShieldCheck, X, Repeat, Ban, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/subscription")({
   head: () => ({ meta: [{ title: "Subscription — MyTapCard" }] }),
@@ -32,6 +39,13 @@ interface Req {
   created_at: string;
   reviewed_at: string | null;
 }
+interface PaymentMethod {
+  id: string;
+  method: string;
+  label: string;
+  account: string;
+  instructions: string | null;
+}
 
 const KIND_LABEL: Record<string, { label: string; icon: any; tone: string }> = {
   buy: { label: "Buy Pro", icon: Crown, tone: "default" },
@@ -43,15 +57,17 @@ function SubscriptionPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [requests, setRequests] = useState<Req[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeKind, setActiveKind] = useState<"buy" | "extend" | "cancel" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [message, setMessage] = useState("");
   const [paymentRef, setPaymentRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function reload() {
     if (!user) return;
-    const [{ data: p }, { data: r }] = await Promise.all([
+    const [{ data: p }, { data: r }, { data: pm }] = await Promise.all([
       supabase
         .from("profiles")
         .select("is_pro, pro_until" as any)
@@ -62,9 +78,17 @@ function SubscriptionPage() {
         .select("id, status, kind, message, amount, currency, payment_ref, created_at, reviewed_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("pro_payment_methods" as any)
+        .select("id, method, label, account, instructions")
+        .eq("enabled", true)
+        .order("position"),
     ]);
     setProfile((p as any) ?? { is_pro: false, pro_until: null });
     setRequests(((r as any[]) ?? []) as Req[]);
+    const methods = ((pm as any[]) ?? []) as PaymentMethod[];
+    setPaymentMethods(methods);
+    setPaymentMethod((current) => current || methods[0]?.method || "");
     setLoading(false);
   }
   useEffect(() => {
@@ -75,6 +99,7 @@ function SubscriptionPage() {
   const isPro = !!profile?.is_pro || trial;
   const proUntil = profile?.pro_until ? new Date(profile.pro_until) : null;
   const pendingKinds = new Set(requests.filter((r) => r.status === "pending").map((r) => r.kind));
+  const selectedPayment = paymentMethods.find((method) => method.method === paymentMethod);
 
   async function submit() {
     if (!user || !activeKind) return;
@@ -86,12 +111,24 @@ function SubscriptionPage() {
       toast.error("Please paste your payment transaction ID / reference");
       return;
     }
+    if (activeKind !== "cancel" && !paymentMethod) {
+      toast.error("Please choose a payment method");
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.from("pro_requests" as any).insert({
       user_id: user.id,
       kind: activeKind,
       status: "pending",
-      message: message.trim() || null,
+      message:
+        activeKind === "cancel"
+          ? message.trim() || null
+          : [
+              `Payment method: ${selectedPayment?.label ?? paymentMethod}`,
+              message.trim() ? `Note: ${message.trim()}` : null,
+            ]
+              .filter(Boolean)
+              .join("\n"),
       amount: activeKind === "cancel" ? null : PLAN_PRICE,
       currency: activeKind === "cancel" ? null : PLAN_CURRENCY,
       payment_ref: activeKind === "cancel" ? null : paymentRef.trim(),
@@ -157,6 +194,7 @@ function SubscriptionPage() {
           pending={pendingKinds.has("buy")}
           onClick={() => {
             setActiveKind("buy");
+            setPaymentMethod(paymentMethods[0]?.method || "");
             setMessage("");
             setPaymentRef("");
           }}
@@ -172,6 +210,7 @@ function SubscriptionPage() {
           pending={pendingKinds.has("extend")}
           onClick={() => {
             setActiveKind("extend");
+            setPaymentMethod(paymentMethods[0]?.method || "");
             setMessage("");
             setPaymentRef("");
           }}
@@ -215,17 +254,67 @@ function SubscriptionPage() {
               <div className="font-semibold">How to pay</div>
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
                 <li>
-                  Send{" "}
+                  Choose a payment method and send{" "}
                   <strong>
                     {PLAN_PRICE} {PLAN_CURRENCY}
-                  </strong>{" "}
-                  via bKash / Nagad / Bank to the admin number shared with you.
+                  </strong>
+                  .
                 </li>
                 <li>Copy the transaction ID (TrxID) from the confirmation SMS.</li>
                 <li>
                   Paste it below and submit — your Pro is activated once an admin approves it.
                 </li>
               </ol>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr]">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Payment method
+                  </label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Choose method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method.id} value={method.method}>
+                          {method.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Copy number / address
+                  </label>
+                  <div className="flex overflow-hidden rounded-md border border-border bg-background">
+                    <input
+                      readOnly
+                      value={selectedPayment?.account ?? ""}
+                      placeholder="Choose a payment method"
+                      className="min-w-0 flex-1 bg-transparent px-3 py-2 font-mono text-sm outline-none"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="rounded-none border-l border-border"
+                      disabled={!selectedPayment?.account}
+                      onClick={() => {
+                        if (!selectedPayment?.account) return;
+                        navigator.clipboard.writeText(selectedPayment.account);
+                        toast.success(`${selectedPayment.label} copied`);
+                      }}
+                    >
+                      <Copy className="h-4 w-4" /> Copy
+                    </Button>
+                  </div>
+                  {selectedPayment?.instructions && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {selectedPayment.instructions}
+                    </p>
+                  )}
+                </div>
+              </div>
               <div className="mt-3">
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Transaction / Reference ID

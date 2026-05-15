@@ -114,19 +114,31 @@ function buildHref(link: { type: string; platform: string | null; value: string 
   if (!v) return "#";
   switch (link.type) {
     case "phone":
-      return `tel:${v}`;
+      return `tel:${normalizePhoneForUri(v)}`;
     case "email":
       return `mailto:${v}`;
     case "sms":
-      return `sms:${v}`;
+      return `sms:${normalizePhoneForUri(v)}`;
     case "social": {
       if (/^https?:\/\//.test(v)) return v;
       const handle = v.replace(/^@/, "");
       switch (link.platform) {
         case "whatsapp":
-          return `https://wa.me/${handle.replace(/\D/g, "")}`;
+          return `https://wa.me/${normalizePhoneForUri(handle).replace(/\D/g, "")}`;
         case "telegram":
           return `https://t.me/${handle}`;
+        case "discord":
+          return `https://discord.gg/${handle}`;
+        case "wechat":
+          return `weixin://dl/chat?${handle}`;
+        case "signal":
+          return `https://signal.me/#p/${normalizePhoneForUri(handle)}`;
+        case "line":
+          return `https://line.me/R/ti/p/${handle.startsWith("@") ? handle : "@" + handle}`;
+        case "viber":
+          return `viber://chat?number=${normalizePhoneForUri(handle)}`;
+        case "messenger":
+          return `https://m.me/${handle}`;
         case "facebook":
           return `https://facebook.com/${handle}`;
         case "instagram":
@@ -135,12 +147,50 @@ function buildHref(link: { type: string; platform: string | null; value: string 
           return `https://linkedin.com/in/${handle}`;
         case "x":
           return `https://x.com/${handle}`;
+        case "threads":
+          return `https://threads.net/@${handle}`;
         case "youtube":
           return `https://youtube.com/@${handle}`;
         case "tiktok":
           return `https://tiktok.com/@${handle}`;
         case "github":
           return `https://github.com/${handle}`;
+        case "snapchat":
+          return `https://snapchat.com/add/${handle}`;
+        case "pinterest":
+          return `https://pinterest.com/${handle}`;
+        case "reddit":
+          return `https://reddit.com/user/${handle}`;
+        case "medium":
+          return `https://medium.com/@${handle}`;
+        case "dribbble":
+          return `https://dribbble.com/${handle}`;
+        case "behance":
+          return `https://behance.net/${handle}`;
+        case "twitch":
+          return `https://twitch.tv/${handle}`;
+        case "spotify":
+          return `https://open.spotify.com/user/${handle}`;
+        case "skype":
+          return `skype:${handle}?chat`;
+        case "slack":
+          return v;
+        case "patreon":
+          return `https://patreon.com/${handle}`;
+        case "substack":
+          return `https://${handle}.substack.com`;
+        case "quora":
+          return `https://quora.com/profile/${handle}`;
+        case "tumblr":
+          return `https://${handle}.tumblr.com`;
+        case "mastodon": {
+          const match = handle.match(/^([^@]+)@(.+)$/);
+          return match ? `https://${match[2]}/@${match[1]}` : v;
+        }
+        case "bluesky":
+          return `https://bsky.app/profile/${handle}`;
+        case "clubhouse":
+          return `https://clubhouse.com/@${handle}`;
         default:
           return v;
       }
@@ -148,6 +198,15 @@ function buildHref(link: { type: string; platform: string | null; value: string 
     default:
       return /^https?:\/\//.test(v) ? v : `https://${v}`;
   }
+}
+
+function normalizePhoneForUri(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith("+")) return `+${trimmed.slice(1).replace(/\D/g, "")}`;
+  const digits = trimmed.replace(/\D/g, "");
+  if (/^01\d{9}$/.test(digits)) return `+880${digits.slice(1)}`;
+  return digits ? `+${digits}` : trimmed;
 }
 
 const FINANCIAL_LABELS: Record<string, string> = {
@@ -165,7 +224,112 @@ const FINANCIAL_LABELS: Record<string, string> = {
   btc: "Bitcoin",
   eth: "Ethereum",
   usdt: "USDT",
+  binance: "Binance",
   other: "Other",
+};
+
+const SOCIAL_ICON_FILES: Record<string, string> = {
+  facebook: "facebook.svg",
+  instagram: "instagram.svg",
+  linkedin: "linkedin.svg",
+  x: "x.svg",
+  threads: "threads.svg",
+  youtube: "youtube.svg",
+  tiktok: "tiktok.svg",
+  github: "github.svg",
+  whatsapp: "whatsapp.svg",
+  telegram: "telegram.svg",
+  discord: "discord.svg",
+  wechat: "wechat.svg",
+  signal: "signal.svg",
+  line: "line.svg",
+  viber: "viber.svg",
+  messenger: "messenger.svg",
+  snapchat: "snapchat.svg",
+  pinterest: "pinterest.svg",
+  reddit: "reddit.svg",
+  medium: "medium.svg",
+  dribbble: "dribbble.svg",
+  behance: "behance.svg",
+  twitch: "twitch.svg",
+  spotify: "spotify.svg",
+  skype: "skype.svg",
+  slack: "slack.svg",
+  patreon: "patreon.svg",
+  substack: "substack.svg",
+  quora: "quora.svg",
+  tumblr: "tumblr.svg",
+  mastodon: "mastodon.svg",
+  bluesky: "bluesky.svg",
+  clubhouse: "clubhouse.svg",
+};
+
+const SOCIAL_LABELS: Record<string, string> = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  x: "X",
+  threads: "Threads",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  github: "GitHub",
+  whatsapp: "WhatsApp",
+  telegram: "Telegram",
+  discord: "Discord",
+  wechat: "WeChat",
+  signal: "Signal",
+  line: "LINE",
+  viber: "Viber",
+  messenger: "Messenger",
+  snapchat: "Snapchat",
+  pinterest: "Pinterest",
+  reddit: "Reddit",
+  medium: "Medium",
+  dribbble: "Dribbble",
+  behance: "Behance",
+  twitch: "Twitch",
+  spotify: "Spotify",
+  skype: "Skype",
+  slack: "Slack",
+  patreon: "Patreon",
+  substack: "Substack",
+  quora: "Quora",
+  tumblr: "Tumblr",
+  mastodon: "Mastodon",
+  bluesky: "Bluesky",
+  clubhouse: "Clubhouse",
+};
+
+const LINK_TYPE_LABELS: Record<string, string> = {
+  url: "Website",
+  email: "Email",
+  phone: "Phone",
+  sms: "SMS",
+  social: "Social",
+};
+
+const LINK_TYPE_ICON_FILES: Record<string, string> = {
+  email: "",
+  phone: "",
+  sms: "",
+  url: "",
+};
+
+const FINANCIAL_ICON_FILES: Record<string, string> = {
+  bkash: "bkash.svg",
+  nagad: "nagad.svg",
+  rocket: "rocket.svg",
+  upay: "upay.svg",
+  binance: "binance.svg",
+  paypal: "paypal.svg",
+  venmo: "venmo.svg",
+  cashapp: "cashapp.svg",
+  zelle: "zelle.svg",
+  revolut: "revolut.svg",
+  wise: "wise.svg",
+  btc: "btc.svg",
+  eth: "eth.svg",
+  usdt: "usdt.svg",
 };
 
 const ACCENTS: Record<string, { from: string; to: string }> = {
@@ -522,6 +686,11 @@ function LinkCard({
 }
 
 function linkIcon(link: any) {
+  const iconFile =
+    link.type === "social" && link.platform
+      ? SOCIAL_ICON_FILES[link.platform]
+      : LINK_TYPE_ICON_FILES[link.type] || LINK_TYPE_ICON_FILES.url;
+  if (iconFile) return <BrandIcon file={iconFile} alt={link.platform || link.type} />;
   if (link.type === "email") return <Mail className="h-4 w-4" />;
   if (link.type === "phone") return <Phone className="h-4 w-4" />;
   if (link.type === "sms") return <MessageSquare className="h-4 w-4" />;
@@ -531,6 +700,18 @@ function linkIcon(link: any) {
     return <Link2 className="h-4 w-4" />;
   }
   return <Globe className="h-4 w-4" />;
+}
+
+function BrandIcon({ file, alt }: { file: string; alt: string }) {
+  return (
+    <img
+      src={`/brand-icons/${file}`}
+      alt=""
+      title={alt}
+      className="h-full w-full rounded-lg bg-white object-contain p-1.5"
+      loading="lazy"
+    />
+  );
 }
 
 function LinkRow({
@@ -546,7 +727,13 @@ function LinkRow({
 }) {
   const href = buildHref(link);
   const isExternal = href.startsWith("http");
-  const label = link.label || link.value || link.platform || "Link";
+  const hasCustomLabel = !!link.label?.trim();
+  const label =
+    link.label?.trim() ||
+    (link.type === "social" && link.platform
+      ? SOCIAL_LABELS[link.platform] || link.platform
+      : LINK_TYPE_LABELS[link.type] || "Link");
+  const subtext = !hasCustomLabel ? formatLinkSubtext(link) : null;
   const radius = btnRadius || "rounded-2xl";
   return (
     <a
@@ -563,11 +750,30 @@ function LinkRow({
         >
           {link.emoji ? <span className="leading-none">{link.emoji}</span> : linkIcon(link)}
         </span>
-        <span className="truncate">{label}</span>
+        <span className="min-w-0">
+          <span className="block truncate">{label}</span>
+          {subtext && (
+            <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">
+              {subtext}
+            </span>
+          )}
+        </span>
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </a>
   );
+}
+
+function formatLinkSubtext(link: any) {
+  const value = (link.value ?? "").trim();
+  if (!value) return null;
+  if (link.type === "social") {
+    if (/^https?:\/\//.test(value)) return value;
+    if (["whatsapp", "signal", "viber"].includes(link.platform)) return value;
+    if (link.platform === "discord") return value;
+    return value.startsWith("@") ? value : `@${value}`;
+  }
+  return value;
 }
 
 function CopyableField({
@@ -632,7 +838,11 @@ function FinancialItem({
             className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-soft"
             style={accentStyle}
           >
-            <Wallet className="h-4 w-4" />
+            {FINANCIAL_ICON_FILES[method.type] ? (
+              <BrandIcon file={FINANCIAL_ICON_FILES[method.type]} alt={typeLabel} />
+            ) : (
+              <Wallet className="h-4 w-4" />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
@@ -662,7 +872,11 @@ function FinancialItem({
         className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-soft"
         style={accentStyle}
       >
-        <Wallet className="h-4 w-4" />
+        {FINANCIAL_ICON_FILES[method.type] ? (
+          <BrandIcon file={FINANCIAL_ICON_FILES[method.type]} alt={typeLabel} />
+        ) : (
+          <Wallet className="h-4 w-4" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">

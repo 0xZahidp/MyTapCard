@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useProStatus } from "@/hooks/use-pro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +26,7 @@ import {
   BarChart3,
   Crown,
   Sticker,
+  X,
 } from "lucide-react";
 import { ReorderButtons } from "@/components/ui/reorder-buttons";
 import { moveItem } from "@/lib/reorder";
@@ -45,6 +47,58 @@ const GROUP_FONTS = [
   { id: "space", name: "Space Grotesk" },
   { id: "mono", name: "Mono" },
 ];
+
+const SOCIAL_PLATFORMS = [
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "telegram", label: "Telegram" },
+  { value: "discord", label: "Discord" },
+  { value: "wechat", label: "WeChat" },
+  { value: "signal", label: "Signal" },
+  { value: "line", label: "LINE" },
+  { value: "viber", label: "Viber" },
+  { value: "messenger", label: "Messenger" },
+  { value: "facebook", label: "Facebook" },
+  { value: "instagram", label: "Instagram" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "x", label: "X" },
+  { value: "threads", label: "Threads" },
+  { value: "youtube", label: "YouTube" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "github", label: "GitHub" },
+  { value: "snapchat", label: "Snapchat" },
+  { value: "pinterest", label: "Pinterest" },
+  { value: "reddit", label: "Reddit" },
+  { value: "medium", label: "Medium" },
+  { value: "dribbble", label: "Dribbble" },
+  { value: "behance", label: "Behance" },
+  { value: "twitch", label: "Twitch" },
+  { value: "spotify", label: "Spotify" },
+  { value: "skype", label: "Skype" },
+  { value: "slack", label: "Slack" },
+  { value: "patreon", label: "Patreon" },
+  { value: "substack", label: "Substack" },
+  { value: "quora", label: "Quora" },
+  { value: "tumblr", label: "Tumblr" },
+  { value: "mastodon", label: "Mastodon" },
+  { value: "bluesky", label: "Bluesky" },
+  { value: "clubhouse", label: "Clubhouse" },
+];
+
+const PHONE_COUNTRIES = [
+  { code: "+880", label: "BD +880" },
+  { code: "+1", label: "US/CA +1" },
+  { code: "+44", label: "UK +44" },
+  { code: "+91", label: "IN +91" },
+  { code: "+92", label: "PK +92" },
+  { code: "+971", label: "UAE +971" },
+  { code: "+966", label: "SA +966" },
+  { code: "+60", label: "MY +60" },
+  { code: "+65", label: "SG +65" },
+  { code: "+61", label: "AU +61" },
+  { code: "+49", label: "DE +49" },
+];
+
+const PHONE_SOCIAL_PLATFORMS = new Set(["whatsapp", "signal", "viber"]);
 
 interface Group {
   id: string;
@@ -69,18 +123,18 @@ interface LinkRow {
 
 function LinksPage() {
   const { user } = useAuth();
+  const { isPro, loading: proLoading } = useProStatus();
   const [groups, setGroups] = useState<Group[]>([]);
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [cards, setCards] = useState<CardRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isPro, setIsPro] = useState(false);
   const [clicks, setClicks] = useState<
     Array<{ link_id: string | null; link_type: string; clicked_at: string }>
   >([]);
 
   async function reload() {
     if (!user) return;
-    const [g, l, c, pr, ck] = await Promise.all([
+    const [g, l, c, ck] = await Promise.all([
       supabase.from("link_groups").select("*").eq("user_id", user.id).order("position"),
       supabase.from("links").select("*").eq("user_id", user.id).order("position"),
       supabase
@@ -88,11 +142,6 @@ function LinksPage() {
         .select("*")
         .eq("user_id", user.id)
         .order("position"),
-      supabase
-        .from("profiles")
-        .select("is_pro" as any)
-        .eq("id", user.id)
-        .maybeSingle(),
       supabase
         .from("link_clicks")
         .select("link_id, link_type, clicked_at" as any)
@@ -103,7 +152,6 @@ function LinksPage() {
     setGroups((g.data ?? []) as Group[]);
     setLinks((l.data ?? []) as LinkRow[]);
     setCards((c.data ?? []) as any as CardRow[]);
-    setIsPro(!!(pr.data as any)?.is_pro);
     setClicks(
       (ck.data ?? []) as any as Array<{
         link_id: string | null;
@@ -191,7 +239,7 @@ function LinksPage() {
     reload();
   }
 
-  if (loading) return <div className="text-muted-foreground">Loading…</div>;
+  if (loading || proLoading) return <div className="text-muted-foreground">Loading…</div>;
 
   // Build interleaved {kind:'link'|'card', item} arrays per scope, sorted by position.
   function scopeItems(groupId: string | null) {
@@ -510,44 +558,64 @@ function LinkEditor({
   total?: number;
   onMove?: (delta: -1 | 1) => void;
 }) {
+  const shouldUsePhoneInput =
+    link.type === "phone" ||
+    link.type === "sms" ||
+    (link.type === "social" && !!link.platform && PHONE_SOCIAL_PLATFORMS.has(link.platform));
+
   return (
     <div className="rounded-2xl border border-border bg-background/50 p-3">
       <div className="flex items-start gap-2">
         {typeof index === "number" && typeof total === "number" && onMove && (
           <ReorderButtons index={index} total={total} vertical onMove={onMove} />
         )}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-card text-xl transition-smooth hover:border-primary/40"
-              title="Pick emoji"
-            >
-              {link.emoji || <Smile className="h-4 w-4 text-muted-foreground" />}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto border-0 bg-transparent p-0 shadow-none">
-            <div className="overflow-hidden rounded-2xl shadow-elegant">
-              <EmojiPicker
-                onEmojiClick={(e) => onChange(link.id, { emoji: e.emoji })}
-                emojiStyle={EmojiStyle.NATIVE}
-                theme={EmojiTheme.AUTO}
-                width={320}
-                height={380}
-                previewConfig={{ showPreview: false }}
-                skinTonesDisabled
-              />
-            </div>
-            {link.emoji && (
+        <div className="flex shrink-0 items-center gap-1">
+          <Popover>
+            <PopoverTrigger asChild>
               <button
-                onClick={() => onChange(link.id, { emoji: null })}
-                className="mt-2 w-full rounded-md bg-card py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                type="button"
+                className="grid h-10 w-10 place-items-center rounded-md border border-border bg-card text-xl transition-smooth hover:border-primary/40"
+                title={link.emoji ? "Change emoji" : "Pick emoji"}
               >
-                Remove emoji
+                {link.emoji || <Smile className="h-4 w-4 text-muted-foreground" />}
               </button>
-            )}
-          </PopoverContent>
-        </Popover>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto border-0 bg-transparent p-0 shadow-none">
+              <div className="overflow-hidden rounded-2xl shadow-elegant">
+                <EmojiPicker
+                  onEmojiClick={(e) => onChange(link.id, { emoji: e.emoji })}
+                  emojiStyle={EmojiStyle.NATIVE}
+                  theme={EmojiTheme.AUTO}
+                  width={320}
+                  height={380}
+                  previewConfig={{ showPreview: false }}
+                  skinTonesDisabled
+                />
+              </div>
+              {link.emoji && (
+                <button
+                  type="button"
+                  onClick={() => onChange(link.id, { emoji: null })}
+                  className="mt-2 w-full rounded-md bg-card py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Remove emoji
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
+          {link.emoji && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Remove emoji"
+              onClick={() => onChange(link.id, { emoji: null })}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         <div className="flex-1 grid gap-2 sm:grid-cols-[140px_1fr]">
           <Select value={link.type} onValueChange={(v) => onChange(link.id, { type: v })}>
             <SelectTrigger>
@@ -582,19 +650,9 @@ function LinkEditor({
               <SelectValue placeholder="Platform" />
             </SelectTrigger>
             <SelectContent>
-              {[
-                "whatsapp",
-                "telegram",
-                "facebook",
-                "instagram",
-                "linkedin",
-                "x",
-                "youtube",
-                "tiktok",
-                "github",
-              ].map((p) => (
-                <SelectItem key={p} value={p} className="capitalize">
-                  {p}
+              {SOCIAL_PLATFORMS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -602,29 +660,104 @@ function LinkEditor({
         ) : (
           <div />
         )}
-        <Input
-          placeholder={placeholderFor(link.type)}
-          value={link.value}
-          onChange={(e) => onChange(link.id, { value: e.target.value })}
-        />
+        {shouldUsePhoneInput ? (
+          <PhoneNumberInput
+            value={link.value}
+            onChange={(value) => onChange(link.id, { value })}
+            placeholder={placeholderFor(link.type, link.platform)}
+          />
+        ) : (
+          <Input
+            placeholder={placeholderFor(link.type, link.platform)}
+            value={link.value}
+            onChange={(e) => onChange(link.id, { value: e.target.value })}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function placeholderFor(type: string) {
+function placeholderFor(type: string, platform?: string | null) {
   switch (type) {
     case "phone":
-      return "+1 555 555 5555";
+      return "1712345678";
     case "email":
       return "you@example.com";
     case "sms":
-      return "+1 555 555 5555";
+      return "1712345678";
     case "social":
-      return "username or URL";
+      if (platform === "whatsapp") return "1712345678";
+      if (platform === "signal" || platform === "viber") return "Phone number";
+      return "username, invite, phone number, or URL";
     default:
       return "https://…";
   }
+}
+
+function PhoneNumberInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const selected = detectDialCode(value) ?? "+880";
+  const localValue = getLocalPhoneValue(value, selected);
+
+  return (
+    <div className="space-y-1">
+      <div className="grid gap-2 sm:grid-cols-[140px_1fr]">
+        <Select
+          value={selected}
+          onValueChange={(code) => onChange(formatInternationalPhone(localValue, code))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PHONE_COUNTRIES.map((country) => (
+              <SelectItem key={country.code} value={country.code}>
+                {country.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          inputMode="tel"
+          placeholder={placeholder}
+          value={localValue}
+          onChange={(e) => onChange(formatInternationalPhone(e.target.value, selected))}
+          onBlur={(e) => onChange(formatInternationalPhone(e.target.value, selected))}
+        />
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Saved as {formatInternationalPhone(localValue, selected) || "an international number"}.
+      </p>
+    </div>
+  );
+}
+
+function detectDialCode(value: string) {
+  const compact = value.replace(/[^\d+]/g, "");
+  return PHONE_COUNTRIES.find((country) => compact.startsWith(country.code))?.code ?? null;
+}
+
+function getLocalPhoneValue(value: string, dialCode: string) {
+  const compact = value.trim().replace(/[^\d+]/g, "");
+  if (compact.startsWith(dialCode)) return compact.slice(dialCode.length);
+  if (compact.startsWith("+")) return compact;
+  return compact.replace(/^0+/, "");
+}
+
+function formatInternationalPhone(value: string, dialCode: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("+")) return `+${trimmed.slice(1).replace(/\D/g, "")}`;
+  const digits = trimmed.replace(/\D/g, "").replace(/^0+/, "");
+  return digits ? `${dialCode}${digits}` : "";
 }
 
 const TYPE_LABELS: Record<string, string> = {

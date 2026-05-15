@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -118,8 +125,23 @@ interface ReqRow {
   created_at: string;
   reviewed_at: string | null;
 }
+interface ProPaymentMethod {
+  id: string;
+  method: string;
+  label: string;
+  account: string;
+  instructions: string | null;
+  enabled: boolean;
+  position: number;
+}
 
 const PAGE_SIZE = 15;
+const PRO_DURATION_PRESETS = [
+  { label: "1 month", days: 30 },
+  { label: "3 months", days: 90 },
+  { label: "6 months", days: 180 },
+  { label: "1 year", days: 365 },
+] as const;
 
 function AdminPage() {
   return (
@@ -132,36 +154,44 @@ function AdminPage() {
 function AdminPageInner() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [requests, setRequests] = useState<ReqRow[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<ProPaymentMethod[]>([]);
   const [referralCounts, setReferralCounts] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [grantDays, setGrantDays] = useState<Record<string, string>>({});
 
   const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
 
   async function reload() {
-    const [{ data: us }, { data: rs }, { data: refs }, { data: rolesData }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select(
-          "id, display_name, username, is_pro, pro_until, created_at, referral_code, referred_by" as any,
-        )
-        .order("created_at", { ascending: false })
-        .limit(1000),
-      supabase
-        .from("pro_requests" as any)
-        .select(
-          "id, user_id, status, message, kind, amount, currency, payment_ref, created_at, reviewed_at",
-        )
-        .order("created_at", { ascending: false }),
-      supabase.from("referrals" as any).select("referrer_id"),
-      supabase
-        .from("user_roles" as any)
-        .select("user_id, role")
-        .eq("role", "admin"),
-    ]);
+    const [{ data: us }, { data: rs }, { data: refs }, { data: rolesData }, { data: payments }] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "id, display_name, username, is_pro, pro_until, created_at, referral_code, referred_by" as any,
+          )
+          .order("created_at", { ascending: false })
+          .limit(1000),
+        supabase
+          .from("pro_requests" as any)
+          .select(
+            "id, user_id, status, message, kind, amount, currency, payment_ref, created_at, reviewed_at",
+          )
+          .order("created_at", { ascending: false }),
+        supabase.from("referrals" as any).select("referrer_id"),
+        supabase
+          .from("user_roles" as any)
+          .select("user_id, role")
+          .eq("role", "admin"),
+        supabase
+          .from("pro_payment_methods" as any)
+          .select("id, method, label, account, instructions, enabled, position")
+          .order("position"),
+      ]);
     setUsers(((us as any[]) ?? []) as UserRow[]);
     setRequests(((rs as any[]) ?? []) as ReqRow[]);
+    setPaymentMethods(((payments as any[]) ?? []) as ProPaymentMethod[]);
     const counts: Record<string, number> = {};
     for (const r of (refs as any[]) ?? []) counts[r.referrer_id] = (counts[r.referrer_id] ?? 0) + 1;
     setReferralCounts(counts);
@@ -193,13 +223,31 @@ function AdminPageInner() {
       reload();
     }
   }
-  async function setPro(uid: string, val: boolean) {
+  async function grantPro(uid: string) {
+    const days = Number(grantDays[uid] ?? 365);
+    const { error } = await supabase.rpc(
+      "admin_grant_pro" as any,
+      { _user_id: uid, _days: days } as any,
+    );
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(
+      `Pro granted for ${PRO_DURATION_PRESETS.find((p) => p.days === days)?.label ?? `${days} days`}`,
+    );
+    reload();
+  }
+  async function revokePro(uid: string) {
     const { error } = await supabase.rpc(
       "admin_set_pro" as any,
-      { _user_id: uid, _is_pro: val } as any,
+      { _user_id: uid, _is_pro: false } as any,
     );
     if (error) toast.error(error.message);
-    else reload();
+    else {
+      toast.success("Pro revoked");
+      reload();
+    }
   }
   async function setAdmin(uid: string, val: boolean) {
     if (val) {
@@ -218,6 +266,21 @@ function AdminPageInner() {
       toast.success("Revoked admin");
     }
     reload();
+  }
+  async function updatePaymentMethod(id: string, patch: Partial<ProPaymentMethod>) {
+    setPaymentMethods((methods) =>
+      methods.map((method) => (method.id === id ? { ...method, ...patch } : method)),
+    );
+    const { error } = await supabase
+      .from("pro_payment_methods" as any)
+      .update(patch as any)
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      reload();
+      return;
+    }
+    toast.success("Payment method updated");
   }
   useEffect(() => {
     reload();
@@ -341,6 +404,94 @@ function AdminPageInner() {
       </header>
 
       <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">Pro payment methods</h2>
+          <p className="text-sm text-muted-foreground">
+            These numbers or addresses are shown to users when they request Pro.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {paymentMethods.map((method) => (
+            <div key={method.id} className="rounded-2xl border border-border bg-secondary/30 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold">{method.label}</div>
+                  <div className="text-xs uppercase text-muted-foreground">{method.method}</div>
+                </div>
+                <Switch
+                  checked={method.enabled}
+                  onCheckedChange={(enabled) => updatePaymentMethod(method.id, { enabled })}
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Display label
+                  </label>
+                  <Input
+                    value={method.label}
+                    onChange={(e) =>
+                      setPaymentMethods((methods) =>
+                        methods.map((item) =>
+                          item.id === method.id ? { ...item, label: e.target.value } : item,
+                        ),
+                      )
+                    }
+                    onBlur={(e) => updatePaymentMethod(method.id, { label: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Number / address
+                  </label>
+                  <Input
+                    value={method.account}
+                    onChange={(e) =>
+                      setPaymentMethods((methods) =>
+                        methods.map((item) =>
+                          item.id === method.id ? { ...item, account: e.target.value } : item,
+                        ),
+                      )
+                    }
+                    onBlur={(e) => updatePaymentMethod(method.id, { account: e.target.value })}
+                    className="font-mono"
+                    placeholder="xxxxxxx"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Instructions
+                  </label>
+                  <Input
+                    value={method.instructions ?? ""}
+                    onChange={(e) =>
+                      setPaymentMethods((methods) =>
+                        methods.map((item) =>
+                          item.id === method.id
+                            ? { ...item, instructions: e.target.value || null }
+                            : item,
+                        ),
+                      )
+                    }
+                    onBlur={(e) =>
+                      updatePaymentMethod(method.id, { instructions: e.target.value || null })
+                    }
+                    placeholder="Optional helper text"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          {paymentMethods.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
+              No payment methods found. Run the latest Supabase migration to seed bKash, Nagad,
+              Rocket, and Binance.
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Pending Pro requests</h2>
           <Badge variant="secondary">{pending.length}</Badge>
@@ -382,7 +533,7 @@ function AdminPageInner() {
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden md:table-cell">Referrals</TableHead>
                 <TableHead className="hidden md:table-cell">Joined</TableHead>
-                <TableHead className="text-right">Pro</TableHead>
+                <TableHead className="text-right">Pro access</TableHead>
                 <TableHead className="text-right">Admin</TableHead>
               </TableRow>
             </TableHeader>
@@ -411,8 +562,34 @@ function AdminPageInner() {
                     <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
                       {new Date(u.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Switch checked={u.is_pro} onCheckedChange={(v) => setPro(u.id, v)} />
+                    <TableCell>
+                      <div className="flex min-w-[230px] flex-wrap items-center justify-end gap-2">
+                        <Select
+                          value={grantDays[u.id] ?? "365"}
+                          onValueChange={(value) =>
+                            setGrantDays((prev) => ({ ...prev, [u.id]: value }))
+                          }
+                        >
+                          <SelectTrigger className="h-9 w-[120px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PRO_DURATION_PRESETS.map((preset) => (
+                              <SelectItem key={preset.days} value={String(preset.days)}>
+                                {preset.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" variant="hero" onClick={() => grantPro(u.id)}>
+                          {u.is_pro || trial ? "Extend" : "Grant"}
+                        </Button>
+                        {(u.is_pro || trial) && (
+                          <Button size="sm" variant="outline" onClick={() => revokePro(u.id)}>
+                            Revoke
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

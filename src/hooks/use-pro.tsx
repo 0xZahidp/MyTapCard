@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 export function useProStatus() {
   const { user } = useAuth();
   const [isPro, setIsPro] = useState(false);
+  const [isTrial, setIsTrial] = useState(false);
   const [proUntil, setProUntil] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
@@ -12,6 +13,11 @@ export function useProStatus() {
 
   useEffect(() => {
     if (!user) {
+      setIsPro(false);
+      setIsTrial(false);
+      setProUntil(null);
+      setIsAdmin(false);
+      setReferralCode(null);
       setLoading(false);
       return;
     }
@@ -32,6 +38,7 @@ export function useProStatus() {
       const prof = p as any;
       const trial = prof?.pro_until ? new Date(prof.pro_until).getTime() > Date.now() : false;
       setIsPro(!!prof?.is_pro || trial);
+      setIsTrial(!prof?.is_pro && trial);
       setProUntil(prof?.pro_until ?? null);
       setReferralCode(prof?.referral_code ?? null);
       setIsAdmin(!!(roles as any[])?.some((r) => r.role === "admin"));
@@ -42,5 +49,5 @@ export function useProStatus() {
     };
   }, [user]);
 
-  return { isPro, proUntil, isAdmin, referralCode, loading };
+  return { isPro, isTrial, proUntil, isAdmin, referralCode, loading };
 }

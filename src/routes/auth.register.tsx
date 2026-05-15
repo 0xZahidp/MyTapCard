@@ -3,14 +3,13 @@ import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell, GoogleIcon } from "@/components/auth/auth-shell";
 import { PasswordField } from "@/components/ui/password-field";
 import { useGlobalLoading } from "@/components/ui/loading-overlay";
-import { redirectWithFallback, waitForVerifiedAuthSession } from "@/lib/auth-session";
+import { getOAuthRedirectUrl } from "@/lib/oauth";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Create your MyTapCard" }] }),
@@ -64,28 +63,21 @@ function RegisterPage() {
 
   async function googleSignIn() {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/dashboard",
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getOAuthRedirectUrl("/dashboard"),
+        queryParams: { prompt: "select_account" },
+      },
     });
-    if (result.error) {
-      toast.error("Google sign-in failed");
+    if (error) {
+      toast.error(error.message);
       setLoading(false);
       return;
     }
-    if (result.redirected) return;
 
-    try {
-      await waitForVerifiedAuthSession();
-    } catch (sessionError) {
-      setLoading(false);
-      toast.error(
-        sessionError instanceof Error ? sessionError.message : "Unable to verify your session.",
-      );
-      return;
-    }
-
+    toast.info("Opening Google sign-in…");
     setLoading(false);
-    await redirectWithFallback(() => navigate({ to: "/dashboard", replace: true }), "/dashboard");
   }
 
   return (

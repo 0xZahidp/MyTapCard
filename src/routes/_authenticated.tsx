@@ -4,6 +4,14 @@ import { useProStatus } from "@/hooks/use-pro";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   CreditCard,
   User,
   Link2,
@@ -18,6 +26,7 @@ import {
   Settings as SettingsIcon,
   ShieldCheck,
   Crown,
+  CalendarClock,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -39,9 +48,11 @@ const nav = [
 
 function AuthLayout() {
   const { user, loading } = useAuth();
-  const { isAdmin } = useProStatus();
+  const { isAdmin, isPro, isTrial, proUntil } = useProStatus();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [trialDialogOpen, setTrialDialogOpen] = useState(false);
+  const [usernameDialogOpen, setUsernameDialogOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navItems = isAdmin
     ? [...nav, { to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
@@ -53,6 +64,47 @@ function AuthLayout() {
     }
   }, [loading, navigate, user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const nextUsername = ((data as any)?.username as string | null | undefined) ?? null;
+
+        if (nextUsername) return;
+        const today = new Date().toISOString().slice(0, 10);
+        const noticeKey = `username-missing-notice:${user.id}:${today}`;
+        if (window.localStorage.getItem(noticeKey)) return;
+
+        setUsernameDialogOpen(true);
+        window.localStorage.setItem(noticeKey, "shown");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !isPro || !proUntil) return;
+
+    const expiresAt = new Date(proUntil).getTime();
+    const daysLeft = Math.ceil((expiresAt - Date.now()) / 86400000);
+    if (daysLeft < 0 || daysLeft > 3) return;
+
+    const noticeKey = `pro-ending-dialog:${user.id}:${new Date(proUntil).toISOString().slice(0, 10)}`;
+    if (window.localStorage.getItem(noticeKey)) return;
+
+    setTrialDialogOpen(true);
+    window.localStorage.setItem(noticeKey, "shown");
+  }, [isPro, proUntil, user]);
+
   if (loading || !user)
     return (
       <div className="grid min-h-screen place-items-center text-muted-foreground">Loading…</div>
@@ -62,6 +114,11 @@ function AuthLayout() {
     await supabase.auth.signOut();
     navigate({ to: "/" });
   }
+
+  const trialDaysLeft = proUntil
+    ? Math.max(0, Math.ceil((new Date(proUntil).getTime() - Date.now()) / 86400000))
+    : 0;
+  const expiryLabel = isTrial ? "trial" : "Pro";
 
   return (
     <div className="min-h-screen bg-cream/40">
@@ -128,6 +185,50 @@ function AuthLayout() {
           </div>
         </main>
       </div>
+      <Dialog open={usernameDialogOpen} onOpenChange={setUsernameDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="mb-2 grid h-11 w-11 place-items-center rounded-xl bg-gradient-primary text-primary-foreground">
+              <User className="h-5 w-5" />
+            </div>
+            <DialogTitle>Set your username</DialogTitle>
+            <DialogDescription>
+              Your public card needs a username before people can open and share your profile link.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUsernameDialogOpen(false)}>
+              Later
+            </Button>
+            <Button asChild variant="hero" onClick={() => setUsernameDialogOpen(false)}>
+              <Link to="/profile">Set username</Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={trialDialogOpen} onOpenChange={setTrialDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="mb-2 grid h-11 w-11 place-items-center rounded-xl bg-gradient-gold text-foreground">
+              <CalendarClock className="h-5 w-5" />
+            </div>
+            <DialogTitle>Your {expiryLabel} is ending soon</DialogTitle>
+            <DialogDescription>
+              {trialDaysLeft <= 0
+                ? `Your ${expiryLabel} ends today. Keep Pro active to continue using Pro features without interruption.`
+                : `Your ${expiryLabel} ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. Keep Pro active to continue using Pro features without interruption.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTrialDialogOpen(false)}>
+              Later
+            </Button>
+            <Button asChild variant="hero" onClick={() => setTrialDialogOpen(false)}>
+              <Link to="/subscription">View options</Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useProStatus } from "@/hooks/use-pro";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -299,7 +300,6 @@ interface Profile {
   button_style: string;
   background_style: string;
   branding_hidden: boolean;
-  is_pro: boolean;
   font_family: string;
   custom_accent_from: string | null;
   custom_accent_to: string | null;
@@ -310,6 +310,7 @@ interface Profile {
 
 function DesignPage() {
   const { user } = useAuth();
+  const { isPro, loading: proLoading } = useProStatus();
   const [p, setP] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewKey, setPreviewKey] = useState(0);
@@ -322,7 +323,7 @@ function DesignPage() {
     supabase
       .from("profiles")
       .select(
-        "theme, accent_color, button_style, background_style, branding_hidden, is_pro, font_family, custom_accent_from, custom_accent_to, avatar_shape, card_radius, username" as any,
+        "theme, accent_color, button_style, background_style, branding_hidden, font_family, custom_accent_from, custom_accent_to, avatar_shape, card_radius, username" as any,
       )
       .eq("id", user.id)
       .maybeSingle()
@@ -339,7 +340,7 @@ function DesignPage() {
 
   async function update(patch: Partial<Profile>) {
     if (!user || !p) return;
-    if (patch.branding_hidden && !p.is_pro) {
+    if (patch.branding_hidden && !isPro) {
       toast.error("Hiding MyTapCard branding is a Pro feature");
       return;
     }
@@ -357,7 +358,7 @@ function DesignPage() {
 
   const previewUrl = useMemo(() => (p?.username ? `/${p.username}` : null), [p?.username]);
 
-  if (loading || !p) return <div className="text-muted-foreground">Loading…</div>;
+  if (loading || proLoading || !p) return <div className="text-muted-foreground">Loading…</div>;
 
   return (
     <div className="space-y-6">
@@ -531,8 +532,7 @@ function DesignPage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">
-                    Color{" "}
-                    {p.is_pro && <span className="text-muted-foreground">(gradient start)</span>}
+                    Color {isPro && <span className="text-muted-foreground">(gradient start)</span>}
                   </Label>
                   <div className="flex items-center gap-2">
                     <input
@@ -551,7 +551,7 @@ function DesignPage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs flex items-center gap-2">
                     Gradient end
-                    {!p.is_pro && (
+                    {!isPro && (
                       <span className="rounded-full bg-gradient-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                         PRO
                       </span>
@@ -560,16 +560,16 @@ function DesignPage() {
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      disabled={!p.is_pro}
+                      disabled={!isPro}
                       value={p.custom_accent_to || p.custom_accent_from || "#456882"}
                       onChange={(e) => update({ custom_accent_to: e.target.value })}
                       className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-transparent disabled:cursor-not-allowed disabled:opacity-50"
                     />
                     <Input
-                      disabled={!p.is_pro}
+                      disabled={!isPro}
                       value={p.custom_accent_to || ""}
                       onChange={(e) => update({ custom_accent_to: e.target.value })}
-                      placeholder={p.is_pro ? "#456882" : "Upgrade to use gradients"}
+                      placeholder={isPro ? "#456882" : "Upgrade to use gradients"}
                     />
                   </div>
                 </div>
@@ -717,7 +717,7 @@ function DesignPage() {
             <div className="flex items-center justify-between gap-3">
               <Label className="text-sm">
                 Branding hidden
-                {!p.is_pro && (
+                {!isPro && (
                   <span className="ml-2 rounded-full bg-gradient-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                     PRO
                   </span>
@@ -725,11 +725,11 @@ function DesignPage() {
               </Label>
               <Switch
                 checked={p.branding_hidden}
-                disabled={!p.is_pro}
+                disabled={!isPro}
                 onCheckedChange={(v) => update({ branding_hidden: v })}
               />
             </div>
-            {!p.is_pro && (
+            {!isPro && (
               <p className="mt-2 text-xs text-muted-foreground">
                 Upgrade to Pro to remove the MyTapCard badge from your public profile.
               </p>

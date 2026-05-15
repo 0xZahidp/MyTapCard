@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useProStatus } from "@/hooks/use-pro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +43,6 @@ interface Profile {
   avatar_url: string | null;
   public_enabled: boolean;
   theme: string;
-  is_pro?: boolean;
   cta_enabled: boolean;
   cta_label: string;
   cta_url: string | null;
@@ -50,6 +50,7 @@ interface Profile {
 
 function ProfilePage() {
   const { user } = useAuth();
+  const { isPro, isTrial, loading: proLoading } = useProStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -79,10 +80,10 @@ function ProfilePage() {
         toast.error("Username must be letters, numbers or underscores (max 30)");
         return;
       }
-      const minLen = profile.is_pro ? 3 : 5;
+      const minLen = isPro ? 3 : 5;
       if (u.length < minLen) {
         toast.error(
-          profile.is_pro
+          isPro
             ? "Username must be at least 3 characters"
             : "Free usernames must be at least 5 characters — upgrade to Pro for shorter names",
         );
@@ -183,7 +184,7 @@ function ProfilePage() {
     });
   }
 
-  if (loading) return <div className="text-muted-foreground">Loading…</div>;
+  if (loading || proLoading) return <div className="text-muted-foreground">Loading…</div>;
   if (!profile) return <div>No profile</div>;
 
   const publicUrl = profile.username ? `${window.location.origin}/${profile.username}` : null;
@@ -284,9 +285,9 @@ function ProfilePage() {
           <div className="space-y-2">
             <Label htmlFor="username">
               Username
-              {profile.is_pro ? (
+              {isPro ? (
                 <span className="ml-2 rounded-full bg-gradient-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                  PRO
+                  {isTrial ? "TRIAL" : "PRO"}
                 </span>
               ) : (
                 <span className="ml-2 text-xs font-normal text-muted-foreground">

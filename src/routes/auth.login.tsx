@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +11,7 @@ import { PasswordField } from "@/components/ui/password-field";
 import { useGlobalLoading } from "@/components/ui/loading-overlay";
 import { useAuth } from "@/hooks/use-auth";
 import { redirectWithFallback, waitForVerifiedAuthSession } from "@/lib/auth-session";
+import { getOAuthRedirectUrl } from "@/lib/oauth";
 
 export const Route = createFileRoute("/auth/login")({
   head: () => ({ meta: [{ title: "Log in — MyTapCard" }] }),
@@ -76,18 +76,21 @@ function LoginPage() {
 
   async function googleSignIn() {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/dashboard",
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getOAuthRedirectUrl("/dashboard"),
+        queryParams: { prompt: "select_account" },
+      },
     });
-    if (result.error) {
-      toast.error("Google sign-in failed");
+    if (error) {
+      toast.error(error.message);
       setLoading(false);
       return;
     }
-    if (result.redirected) return;
-    await router.invalidate();
+
+    toast.info("Opening Google sign-in…");
     setLoading(false);
-    await navigate({ to: "/dashboard", replace: true });
   }
 
   return (

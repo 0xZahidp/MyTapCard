@@ -11,6 +11,7 @@ import { PasswordField } from "@/components/ui/password-field";
 import { useGlobalLoading } from "@/components/ui/loading-overlay";
 import { Textarea } from "@/components/ui/textarea";
 import { KeyRound, Link as LinkIcon, ShieldCheck, Sparkles, Crown, Copy, Gift } from "lucide-react";
+import { getOAuthRedirectUrl } from "@/lib/oauth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — MyTapCard" }] }),
@@ -24,6 +25,7 @@ function SettingsPage() {
   const [pwd2, setPwd2] = useState("");
   const [savingPwd, setSavingPwd] = useState(false);
   const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
   const [identities, setIdentities] = useState<{ provider: string; id: string }[]>([]);
   const [reqMsg, setReqMsg] = useState("");
   const [reqStatus, setReqStatus] = useState<string | null>(null);
@@ -36,11 +38,11 @@ function SettingsPage() {
       name?: string | null;
     }>
   >([]);
-  useGlobalLoading(savingPwd || linking, "settings-actions");
+  useGlobalLoading(savingPwd || linking || unlinking, "settings-actions");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const ids = (data.user?.identities ?? []).map((i) => ({
+    supabase.auth.getUserIdentities().then(({ data }) => {
+      const ids = (data?.identities ?? []).map((i) => ({
         provider: i.provider,
         id: i.identity_id ?? i.id,
       }));
@@ -132,17 +134,31 @@ function SettingsPage() {
     setLinking(true);
     const { error } = await supabase.auth.linkIdentity({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/settings` },
+      options: {
+        redirectTo: getOAuthRedirectUrl("/settings"),
+        queryParams: { prompt: "select_account" },
+      },
     });
+    if (error) {
+      toast.error(error.message);
+      setLinking(false);
+      return;
+    }
+
+    toast.info("Opening Google connection…");
     setLinking(false);
-    if (error) toast.error(error.message);
   }
 
   async function unlinkGoogle() {
+    setUnlinking(true);
     const { data } = await supabase.auth.getUserIdentities();
     const google = data?.identities?.find((i) => i.provider === "google");
-    if (!google) return;
+    if (!google) {
+      setUnlinking(false);
+      return;
+    }
     const { error } = await supabase.auth.unlinkIdentity(google);
+    setUnlinking(false);
     if (error) {
       toast.error(error.message);
       return;
@@ -331,8 +347,8 @@ function SettingsPage() {
             </div>
           </div>
           {hasGoogle ? (
-            <Button variant="outline" size="sm" onClick={unlinkGoogle}>
-              Disconnect
+            <Button variant="outline" size="sm" onClick={unlinkGoogle} disabled={unlinking}>
+              {unlinking ? "Disconnecting…" : "Disconnect"}
             </Button>
           ) : (
             <Button variant="hero" size="sm" onClick={linkGoogle} disabled={linking}>
