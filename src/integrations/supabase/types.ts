@@ -308,6 +308,7 @@ export type Database = {
           theme: string;
           updated_at: string;
           username: string | null;
+          verified_badge_enabled: boolean;
         };
         Insert: {
           accent_color?: string;
@@ -339,6 +340,7 @@ export type Database = {
           theme?: string;
           updated_at?: string;
           username?: string | null;
+          verified_badge_enabled?: boolean;
         };
         Update: {
           accent_color?: string;
@@ -370,6 +372,7 @@ export type Database = {
           theme?: string;
           updated_at?: string;
           username?: string | null;
+          verified_badge_enabled?: boolean;
         };
         Relationships: [];
       };

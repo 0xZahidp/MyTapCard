@@ -20,6 +20,7 @@ import {
   Sparkles,
   Crown,
   Layers3,
+  BadgeCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/design")({
@@ -44,6 +45,10 @@ const ACCENTS = [
   { id: "indigo", name: "Indigo", swatch: "linear-gradient(135deg,#3730A3,#818CF8)" },
   { id: "graphite", name: "Graphite", swatch: "linear-gradient(135deg,#111827,#6B7280)" },
   { id: "coral", name: "Coral", swatch: "linear-gradient(135deg,#E11D48,#F59E0B)" },
+  { id: "platinum", name: "Platinum", swatch: "linear-gradient(135deg,#334155,#E2E8F0)" },
+  { id: "emerald", name: "Emerald", swatch: "linear-gradient(135deg,#064E3B,#34D399)" },
+  { id: "ruby", name: "Ruby", swatch: "linear-gradient(135deg,#7F1D1D,#F43F5E)" },
+  { id: "neon", name: "Neon", swatch: "linear-gradient(135deg,#0F172A,#22D3EE)" },
 ];
 
 const BUTTON_STYLES = [
@@ -59,7 +64,22 @@ const BACKGROUNDS = [
   { id: "linen", name: "Linen" },
   { id: "mesh", name: "Mesh" },
   { id: "studio", name: "Studio" },
+  { id: "aurora", name: "Aurora" },
+  { id: "carbon", name: "Carbon" },
+  { id: "paper", name: "Paper" },
 ];
+
+const BACKGROUND_PREVIEW_CLASS: Record<string, string> = {
+  hero: "bg-hero",
+  sand: "bg-gradient-sand",
+  solid: "bg-background",
+  linen: "bg-linen",
+  mesh: "bg-mesh",
+  studio: "bg-studio",
+  aurora: "bg-aurora",
+  carbon: "bg-carbon",
+  paper: "bg-paper",
+};
 
 const FONT_GROUPS: Record<
   "sans" | "serif" | "display" | "mono",
@@ -292,6 +312,62 @@ const TEMPLATES: Array<{
     },
     preview: { from: "#BE123C", to: "#FB7185", bg: "#fff7ed" },
   },
+  {
+    id: "platinum",
+    name: "Platinum",
+    tagline: "Polished consultant",
+    patch: {
+      accent_color: "platinum",
+      button_style: "rounded",
+      background_style: "paper",
+      font_family: "sora",
+      card_radius: "xl",
+      avatar_shape: "rounded",
+    },
+    preview: { from: "#334155", to: "#E2E8F0", bg: "#f8fafc" },
+  },
+  {
+    id: "neon",
+    name: "Neon Night",
+    tagline: "High-contrast tech",
+    patch: {
+      accent_color: "neon",
+      button_style: "pill",
+      background_style: "carbon",
+      font_family: "space",
+      card_radius: "lg",
+      avatar_shape: "circle",
+    },
+    preview: { from: "#0F172A", to: "#22D3EE", bg: "#020617" },
+  },
+  {
+    id: "aurora",
+    name: "Aurora",
+    tagline: "Premium gradient",
+    patch: {
+      accent_color: "emerald",
+      button_style: "rounded",
+      background_style: "aurora",
+      font_family: "manrope",
+      card_radius: "lg",
+      avatar_shape: "circle",
+    },
+    preview: { from: "#064E3B", to: "#34D399", bg: "#ecfeff" },
+  },
+  {
+    id: "ruby",
+    name: "Ruby",
+    tagline: "Bold personal brand",
+    patch: {
+      accent_color: "ruby",
+      button_style: "pill",
+      background_style: "studio",
+      font_family: "fraunces",
+      card_radius: "xl",
+      avatar_shape: "rounded",
+    },
+    preview: { from: "#7F1D1D", to: "#F43F5E", bg: "#fff1f2" },
+  },
 ];
 
 interface Profile {
@@ -306,6 +382,7 @@ interface Profile {
   avatar_shape: string;
   card_radius: string;
   username: string | null;
+  verified_badge_enabled: boolean;
 }
 
 function DesignPage() {
@@ -322,9 +399,7 @@ function DesignPage() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select(
-        "theme, accent_color, button_style, background_style, branding_hidden, font_family, custom_accent_from, custom_accent_to, avatar_shape, card_radius, username" as any,
-      )
+      .select("*")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -434,53 +509,122 @@ function DesignPage() {
 
           <Section
             icon={<Layers3 className="h-4 w-4" />}
-            title="Design resources"
-            desc="Starter palettes and type pairings for faster styling."
+            title="Premium styles"
+            desc="Pro-only palettes and type pairings that apply a complete visual direction."
           >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                <Crown className="h-3 w-3" /> PRO
+              </span>
+              {!isPro && (
+                <span className="text-xs text-muted-foreground">
+                  Upgrade to apply these premium styles.
+                </span>
+              )}
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               {[
                 {
                   name: "Executive",
                   colors: ["#111827", "#D1D5DB", "#FFFFFF"],
                   font: "Sora + Inter",
+                  patch: {
+                    accent_color: "platinum",
+                    background_style: "paper",
+                    font_family: "sora",
+                    button_style: "rounded",
+                    card_radius: "xl",
+                    avatar_shape: "rounded",
+                  },
                 },
                 {
                   name: "Creative",
                   colors: ["#E11D48", "#F59E0B", "#FFF7ED"],
                   font: "Fraunces + DM Sans",
+                  patch: {
+                    accent_color: "coral",
+                    background_style: "mesh",
+                    font_family: "fraunces",
+                    button_style: "pill",
+                    card_radius: "lg",
+                    avatar_shape: "circle",
+                  },
                 },
                 {
                   name: "Wellness",
                   colors: ["#047857", "#A7F3D0", "#F0FDF4"],
                   font: "Manrope + Lora",
+                  patch: {
+                    accent_color: "emerald",
+                    background_style: "aurora",
+                    font_family: "manrope",
+                    button_style: "pill",
+                    card_radius: "xl",
+                    avatar_shape: "rounded",
+                  },
                 },
                 {
                   name: "Luxury",
                   colors: ["#1A1208", "#FFD700", "#FAF7ED"],
                   font: "Cormorant + Libre",
+                  patch: {
+                    accent_color: "gold",
+                    background_style: "carbon",
+                    font_family: "cormorant",
+                    button_style: "pill",
+                    card_radius: "lg",
+                    avatar_shape: "circle",
+                    custom_accent_from: "#8B5E00",
+                    custom_accent_to: "#FFD700",
+                  },
                 },
-              ].map((resource) => (
-                <div
-                  key={resource.name}
-                  className="rounded-2xl border border-border bg-secondary/30 p-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold">{resource.name}</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">{resource.font}</div>
+              ].map((resource) => {
+                const patch = resource.patch as Partial<Profile>;
+                const active =
+                  p.accent_color === patch.accent_color &&
+                  p.background_style === patch.background_style &&
+                  p.font_family === patch.font_family &&
+                  p.button_style === patch.button_style;
+                return (
+                  <button
+                    key={resource.name}
+                    type="button"
+                    onClick={() => {
+                      if (!isPro) {
+                        toast.error("Premium styles are a Pro feature");
+                        return;
+                      }
+                      update(patch);
+                    }}
+                    className={`rounded-2xl border p-4 text-left transition-smooth ${
+                      active
+                        ? "border-primary bg-secondary/50 shadow-soft"
+                        : isPro
+                          ? "border-border bg-secondary/30 hover:border-primary/40 hover:bg-secondary/50"
+                          : "border-border bg-secondary/20 opacity-75"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-semibold">
+                          {resource.name}
+                          {active && <Check className="h-3.5 w-3.5 text-primary" />}
+                        </div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">{resource.font}</div>
+                      </div>
+                      <div className="flex -space-x-2">
+                        {resource.colors.map((color) => (
+                          <span
+                            key={color}
+                            className="h-7 w-7 rounded-full border-2 border-card shadow-soft"
+                            style={{ background: color }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex -space-x-2">
-                      {resource.colors.map((color) => (
-                        <span
-                          key={color}
-                          className="h-7 w-7 rounded-full border-2 border-card shadow-soft"
-                          style={{ background: color }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </Section>
 
@@ -690,7 +834,7 @@ function DesignPage() {
                     className={`rounded-2xl border-2 p-3 transition-smooth ${active ? "border-primary" : "border-border hover:border-primary/40"}`}
                   >
                     <div
-                      className={`h-16 rounded-xl ${b.id === "hero" ? "bg-hero" : b.id === "sand" ? "bg-gradient-sand" : "bg-card"}`}
+                      className={`h-16 rounded-xl border border-border/60 ${BACKGROUND_PREVIEW_CLASS[b.id] ?? "bg-card"}`}
                     />
                     <div className="mt-2 text-sm font-semibold">{b.name}</div>
                   </button>
@@ -711,6 +855,32 @@ function DesignPage() {
                 </button>
               ))}
             </div>
+          </Section>
+
+          <Section
+            icon={<BadgeCheck className="h-4 w-4" />}
+            title="Verified badge"
+            desc="Show a verified mark beside your public profile name."
+          >
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm">
+                Show verified badge
+                {!isPro && (
+                  <span className="ml-2 rounded-full bg-gradient-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    PRO
+                  </span>
+                )}
+              </Label>
+              <Switch
+                checked={isPro && p.verified_badge_enabled !== false}
+                disabled={!isPro}
+                onCheckedChange={(v) => update({ verified_badge_enabled: v })}
+              />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Only Pro profiles can display this badge. Turning it off hides it from the public
+              card.
+            </p>
           </Section>
 
           <Section title="MyTapCard branding" desc="Hide the standard footer on your public page.">

@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ import {
   Quote,
   Megaphone,
   StickyNote,
+  BadgeCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -116,7 +117,20 @@ function buildHref(link: { type: string; platform: string | null; value: string 
     case "phone":
       return `tel:${normalizePhoneForUri(v)}`;
     case "email":
-      return `mailto:${v}`;
+      switch (link.platform) {
+        case "gmail":
+          return `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(v)}`;
+        case "outlook":
+          return `https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(v)}`;
+        case "yahoo":
+          return `https://compose.mail.yahoo.com/?to=${encodeURIComponent(v)}`;
+        case "proton":
+          return `https://mail.proton.me/u/0/inbox?to=${encodeURIComponent(v)}`;
+        case "apple-mail":
+        case "custom-email":
+        default:
+          return `mailto:${v}`;
+      }
     case "sms":
       return `sms:${normalizePhoneForUri(v)}`;
     case "social": {
@@ -167,6 +181,47 @@ function buildHref(link: { type: string; platform: string | null; value: string 
           return `https://dribbble.com/${handle}`;
         case "behance":
           return `https://behance.net/${handle}`;
+        case "gitlab":
+          return `https://gitlab.com/${handle}`;
+        case "devto":
+          return `https://dev.to/${handle}`;
+        case "stackoverflow":
+          return `https://stackoverflow.com/users/${handle}`;
+        case "fiverr":
+          return `https://fiverr.com/${handle}`;
+        case "upwork":
+          return `https://upwork.com/freelancers/${handle}`;
+        case "freelancer":
+          return `https://freelancer.com/u/${handle}`;
+        case "crunchbase":
+          return `https://crunchbase.com/person/${handle}`;
+        case "wellfound":
+          return `https://wellfound.com/u/${handle}`;
+        case "ens":
+          return `https://app.ens.domains/${handle}`;
+        case "lens":
+          return `https://hey.xyz/u/${handle}`;
+        case "farcaster":
+          return `https://warpcast.com/${handle}`;
+        case "opensea":
+          return `https://opensea.io/${handle}`;
+        case "magiceden":
+          return `https://magiceden.io/u/${handle}`;
+        case "metamask":
+        case "ethereum":
+          return `https://etherscan.io/address/${handle}`;
+        case "solana":
+          return `https://solscan.io/account/${handle}`;
+        case "bitcoin":
+          return `bitcoin:${handle}`;
+        case "walletconnect":
+          return v;
+        case "debank":
+          return `https://debank.com/profile/${handle}`;
+        case "google-maps":
+        case "booking":
+        case "store":
+          return /^https?:\/\//.test(v) ? v : `https://${v}`;
         case "twitch":
           return `https://twitch.tv/${handle}`;
         case "spotify":
@@ -225,6 +280,7 @@ const FINANCIAL_LABELS: Record<string, string> = {
   eth: "Ethereum",
   usdt: "USDT",
   binance: "Binance",
+  stripe: "Stripe Payment Link",
   other: "Other",
 };
 
@@ -251,6 +307,20 @@ const SOCIAL_ICON_FILES: Record<string, string> = {
   medium: "medium.svg",
   dribbble: "dribbble.svg",
   behance: "behance.svg",
+  gitlab: "gitlab.svg",
+  devto: "devto.svg",
+  stackoverflow: "stackoverflow.svg",
+  fiverr: "fiverr.svg",
+  upwork: "upwork.svg",
+  freelancer: "freelancer.svg",
+  crunchbase: "crunchbase.svg",
+  wellfound: "wellfound.svg",
+  ens: "ens.svg",
+  lens: "lens.svg",
+  farcaster: "farcaster.svg",
+  "google-maps": "google-maps.svg",
+  booking: "booking.svg",
+  store: "store.svg",
   twitch: "twitch.svg",
   spotify: "spotify.svg",
   skype: "skype.svg",
@@ -287,6 +357,20 @@ const SOCIAL_LABELS: Record<string, string> = {
   medium: "Medium",
   dribbble: "Dribbble",
   behance: "Behance",
+  gitlab: "GitLab",
+  devto: "Dev.to",
+  stackoverflow: "Stack Overflow",
+  fiverr: "Fiverr",
+  upwork: "Upwork",
+  freelancer: "Freelancer",
+  crunchbase: "Crunchbase",
+  wellfound: "AngelList / Wellfound",
+  ens: "ENS",
+  lens: "Lens",
+  farcaster: "Farcaster",
+  "google-maps": "Google Maps Location",
+  booking: "Booking Link",
+  store: "Store",
   twitch: "Twitch",
   spotify: "Spotify",
   skype: "Skype",
@@ -298,6 +382,24 @@ const SOCIAL_LABELS: Record<string, string> = {
   mastodon: "Mastodon",
   bluesky: "Bluesky",
   clubhouse: "Clubhouse",
+};
+
+const EMAIL_ICON_FILES: Record<string, string> = {
+  gmail: "gmail.svg",
+  outlook: "outlook.svg",
+  yahoo: "yahoo.svg",
+  proton: "proton.svg",
+  "apple-mail": "apple-mail.svg",
+  "custom-email": "custom-email.svg",
+};
+
+const EMAIL_LABELS: Record<string, string> = {
+  gmail: "Gmail",
+  outlook: "Outlook",
+  yahoo: "Yahoo Mail",
+  proton: "Proton Mail",
+  "apple-mail": "Apple Mail",
+  "custom-email": "Custom Email",
 };
 
 const LINK_TYPE_LABELS: Record<string, string> = {
@@ -329,7 +431,10 @@ const FINANCIAL_ICON_FILES: Record<string, string> = {
   wise: "wise.svg",
   btc: "btc.svg",
   eth: "eth.svg",
+  bitcoin: "bitcoin.svg",
+  ethereum: "ethereum.svg",
   usdt: "usdt.svg",
+  stripe: "stripe.svg",
 };
 
 const ACCENTS: Record<string, { from: string; to: string }> = {
@@ -345,6 +450,10 @@ const ACCENTS: Record<string, { from: string; to: string }> = {
   indigo: { from: "#3730A3", to: "#818CF8" },
   graphite: { from: "#111827", to: "#6B7280" },
   coral: { from: "#E11D48", to: "#F59E0B" },
+  platinum: { from: "#334155", to: "#E2E8F0" },
+  emerald: { from: "#064E3B", to: "#34D399" },
+  ruby: { from: "#7F1D1D", to: "#F43F5E" },
+  neon: { from: "#0F172A", to: "#22D3EE" },
 };
 
 const BTN_RADIUS: Record<string, string> = {
@@ -360,6 +469,9 @@ const BG_CLASS: Record<string, string> = {
   linen: "bg-linen",
   mesh: "bg-mesh",
   studio: "bg-studio",
+  aurora: "bg-aurora",
+  carbon: "bg-carbon",
+  paper: "bg-paper",
 };
 
 function buildFinancialHref(m: { type: string; value: string }) {
@@ -370,6 +482,8 @@ function buildFinancialHref(m: { type: string; value: string }) {
       if (/^https?:\/\//.test(v)) return v;
       if (v.includes("@")) return `mailto:${v}`;
       return `https://paypal.me/${v.replace(/^@/, "")}`;
+    case "stripe":
+      return /^https?:\/\//.test(v) ? v : `https://${v}`;
     case "venmo":
       return `https://venmo.com/${v.replace(/^@/, "")}`;
     case "cashapp":
@@ -410,6 +524,7 @@ function PublicProfile() {
   const accentKey = (profile as any).accent_color ?? "deep";
   const proUntil = (profile as any).pro_until ? new Date((profile as any).pro_until).getTime() : 0;
   const isPro = !!(profile as any).is_pro || proUntil > Date.now();
+  const showVerifiedBadge = isPro && (profile as any).verified_badge_enabled !== false;
   const accent =
     accentKey === "custom"
       ? {
@@ -459,6 +574,15 @@ function PublicProfile() {
           ? "rounded-none"
           : "rounded-3xl";
 
+  useEffect(() => {
+    void supabase.from("link_clicks").insert({
+      user_id: profile.id,
+      link_id: null,
+      link_type: "profile_view",
+      platform: "profile",
+    } as any);
+  }, [profile.id]);
+
   // Pro-only animation classes
   const proCard = isPro ? "pro-rise" : "";
   const proCta = isPro ? "pro-shimmer pro-glow" : "";
@@ -491,11 +615,11 @@ function PublicProfile() {
         href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Caveat:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=Fira+Code:wght@400;600&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;700&family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@400;600&family=Sora:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap"
         rel="stylesheet"
       />
-      <div className={`min-h-screen ${bgClass}`}>
+      <div className={`min-h-screen ${bgClass} text-foreground`}>
         <div className="mx-auto max-w-md px-4 pb-10 pt-8">
           {/* Profile card */}
           <section
-            className={`${cardRadius} bg-card p-6 text-center shadow-elegant ${proCard}`}
+            className={`${cardRadius} bg-card p-6 text-center text-card-foreground shadow-elegant ${proCard}`}
             style={isPro ? { animationDelay: "0ms" } : undefined}
           >
             <div
@@ -513,7 +637,22 @@ function PublicProfile() {
                 </AvatarFallback>
               </Avatar>
             </div>
-            <h1 className="text-xl font-bold">{profile.display_name ?? profile.username}</h1>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-xl font-bold">{profile.display_name ?? profile.username}</h1>
+              {showVerifiedBadge && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[11px] font-bold text-primary-foreground shadow-soft"
+                  title="Verified"
+                >
+                  <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                </span>
+              )}
+            </div>
+            {profile.username && (
+              <div className="mt-1 text-sm font-medium text-muted-foreground">
+                @{profile.username}
+              </div>
+            )}
             {profile.bio && (
               <FormattedBio
                 value={profile.bio}
@@ -534,7 +673,7 @@ function PublicProfile() {
           )}
 
           {showTabs && (
-            <div className="mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-card p-1 shadow-soft">
+            <div className="mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-card p-1 text-card-foreground shadow-soft">
               <button
                 onClick={() => setTab("links")}
                 className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-smooth ${tab === "links" ? "text-white shadow-soft" : "text-muted-foreground"}`}
@@ -676,7 +815,7 @@ function LinkCard({
 }) {
   return (
     <section
-      className={`bg-card p-5 shadow-elegant ${radius}`}
+      className={`bg-card p-5 text-card-foreground shadow-elegant ${radius}`}
       style={fontFamily ? { fontFamily } : undefined}
     >
       <h2 className="mb-3 text-base font-semibold">{title}</h2>
@@ -689,7 +828,9 @@ function linkIcon(link: any) {
   const iconFile =
     link.type === "social" && link.platform
       ? SOCIAL_ICON_FILES[link.platform]
-      : LINK_TYPE_ICON_FILES[link.type] || LINK_TYPE_ICON_FILES.url;
+      : link.type === "email" && link.platform
+        ? EMAIL_ICON_FILES[link.platform]
+        : LINK_TYPE_ICON_FILES[link.type] || LINK_TYPE_ICON_FILES.url;
   if (iconFile) return <BrandIcon file={iconFile} alt={link.platform || link.type} />;
   if (link.type === "email") return <Mail className="h-4 w-4" />;
   if (link.type === "phone") return <Phone className="h-4 w-4" />;
@@ -730,10 +871,12 @@ function LinkRow({
   const hasCustomLabel = !!link.label?.trim();
   const label =
     link.label?.trim() ||
-    (link.type === "social" && link.platform
-      ? SOCIAL_LABELS[link.platform] || link.platform
-      : LINK_TYPE_LABELS[link.type] || "Link");
-  const subtext = !hasCustomLabel ? formatLinkSubtext(link) : null;
+    (link.type === "email" && link.platform
+      ? EMAIL_LABELS[link.platform] || "Email"
+      : link.type === "social" && link.platform
+        ? SOCIAL_LABELS[link.platform] || link.platform
+        : LINK_TYPE_LABELS[link.type] || "Link");
+  const subtext = formatLinkSubtext(link);
   const radius = btnRadius || "rounded-2xl";
   return (
     <a
@@ -741,7 +884,7 @@ function LinkRow({
       target={isExternal ? "_blank" : undefined}
       rel={isExternal ? "noreferrer" : undefined}
       onClick={onClick}
-      className={`group flex items-center justify-between gap-3 ${radius} bg-secondary/60 px-4 py-3.5 font-medium transition-smooth hover:-translate-y-0.5 hover:bg-secondary`}
+      className={`group flex items-center justify-between gap-3 ${radius} bg-secondary/60 px-4 py-3.5 font-medium text-secondary-foreground transition-smooth hover:-translate-y-0.5 hover:bg-secondary`}
     >
       <span className="flex min-w-0 items-center gap-3">
         <span
@@ -768,12 +911,39 @@ function formatLinkSubtext(link: any) {
   const value = (link.value ?? "").trim();
   if (!value) return null;
   if (link.type === "social") {
-    if (/^https?:\/\//.test(value)) return value;
+    if (/^https?:\/\//.test(value)) return extractPlatformUsername(value, link.platform);
     if (["whatsapp", "signal", "viber"].includes(link.platform)) return value;
     if (link.platform === "discord") return value;
     return value.startsWith("@") ? value : `@${value}`;
   }
   return value;
+}
+
+function extractPlatformUsername(value: string, platform?: string | null) {
+  try {
+    const url = new URL(value);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const first = parts[0] ?? "";
+    const last = parts[parts.length - 1] ?? "";
+    const handle =
+      platform === "youtube" && first.startsWith("@")
+        ? first
+        : platform === "linkedin" && first === "in"
+          ? parts[1]
+          : platform === "stackoverflow" && first === "users"
+            ? (parts[2] ?? parts[1])
+            : platform === "reddit" && first === "user"
+              ? parts[1]
+              : platform === "medium" && first.startsWith("@")
+                ? first
+                : platform === "threads" && first.startsWith("@")
+                  ? first
+                  : last || first || url.hostname.replace(/^www\./, "");
+    if (!handle) return value;
+    return handle.startsWith("@") ? handle : `@${handle}`;
+  } catch {
+    return value;
+  }
 }
 
 function CopyableField({
@@ -786,7 +956,7 @@ function CopyableField({
   copyable: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-2 rounded-lg bg-card/60 px-3 py-2">
+    <div className="flex items-start justify-between gap-2 rounded-lg bg-card/60 px-3 py-2 text-card-foreground">
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
         <div className="truncate font-mono text-sm">{value}</div>
@@ -832,7 +1002,7 @@ function FinancialItem({
     ].filter((f) => (f.value ?? "").toString().trim() !== "");
 
     return (
-      <div className="rounded-2xl bg-secondary/60 p-4">
+      <div className="rounded-2xl bg-secondary/60 p-4 text-secondary-foreground">
         <div className="flex items-start gap-3">
           <div
             className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-soft"
@@ -911,13 +1081,13 @@ function FinancialItem({
         href={href}
         target="_blank"
         rel="noreferrer"
-        className="block rounded-2xl bg-secondary/60 p-4 transition-smooth hover:-translate-y-0.5 hover:bg-secondary"
+        className="block rounded-2xl bg-secondary/60 p-4 text-secondary-foreground transition-smooth hover:-translate-y-0.5 hover:bg-secondary"
       >
         {inner}
       </a>
     );
   }
-  return <div className="rounded-2xl bg-secondary/60 p-4">{inner}</div>;
+  return <div className="rounded-2xl bg-secondary/60 p-4 text-secondary-foreground">{inner}</div>;
 }
 
 function CardBlock({
@@ -950,7 +1120,7 @@ function CardBlock({
     return (
       <motion.blockquote
         {...motionProps}
-        className={`${radius} border-l-4 bg-secondary/40 p-4 italic`}
+        className={`${radius} border-l-4 bg-secondary/40 p-4 text-secondary-foreground italic`}
         style={{
           borderLeftColor: (accentStyle as any)?.background ? undefined : "currentColor",
           ...customStyle,
@@ -988,7 +1158,7 @@ function CardBlock({
     return (
       <motion.div
         {...motionProps}
-        className={`overflow-hidden ${radius} bg-card shadow-elegant ring-1 ring-border`}
+        className={`overflow-hidden ${radius} bg-card text-card-foreground shadow-elegant ring-1 ring-border`}
         style={customStyle}
       >
         {card.image_url && (
@@ -1022,7 +1192,11 @@ function CardBlock({
 
   // note / default
   return (
-    <motion.div {...motionProps} className={`${radius} bg-secondary/40 p-4`} style={customStyle}>
+    <motion.div
+      {...motionProps}
+      className={`${radius} bg-secondary/40 p-4 text-secondary-foreground`}
+      style={customStyle}
+    >
       <div className="flex items-start gap-3">
         <StickyNote className="h-4 w-4 shrink-0 opacity-60" />
         <div className="min-w-0">

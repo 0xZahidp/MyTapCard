@@ -46,6 +46,8 @@ const TYPES = [
   { value: "nagad", label: "Nagad (BD)" },
   { value: "rocket", label: "Rocket (BD)" },
   { value: "upay", label: "Upay (BD)" },
+  { value: "paypal", label: "PayPal" },
+  { value: "stripe", label: "Stripe Payment Link" },
   { value: "iban", label: "Bank / IBAN" },
   { value: "btc", label: "Bitcoin" },
   { value: "eth", label: "Ethereum" },
@@ -67,6 +69,8 @@ const PHONE_COUNTRIES = [
   { code: "+61", label: "AU +61" },
   { code: "+49", label: "DE +49" },
 ];
+
+const BD_PHONE_COUNTRIES = PHONE_COUNTRIES.filter((country) => country.code === "+880");
 
 const MOBILE_MONEY_TYPES = new Set(["bkash", "nagad", "rocket", "upay"]);
 
@@ -151,9 +155,6 @@ function FinancialPage() {
             Add optional payment details visitors can use to pay you.
           </p>
         </div>
-        <Button variant="hero" onClick={addMethod}>
-          <Plus className="h-4 w-4" /> Add method
-        </Button>
       </header>
 
       <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
@@ -320,6 +321,7 @@ function FinancialPage() {
                       value={m.value}
                       onChange={(value) => updateMethod(m.id, { value })}
                       placeholder={placeholderFor(m.type)}
+                      countries={BD_PHONE_COUNTRIES}
                     />
                   ) : (
                     <Input
@@ -345,6 +347,9 @@ function FinancialPage() {
               )}
             </div>
           ))}
+          <Button variant="hero" className="w-full" onClick={addMethod}>
+            <Plus className="h-4 w-4" /> Add method
+          </Button>
         </div>
       )}
     </div>
@@ -358,6 +363,10 @@ function placeholderFor(type: string) {
     case "rocket":
     case "upay":
       return "1712345678";
+    case "paypal":
+      return "PayPal.me username, email, or link";
+    case "stripe":
+      return "https://buy.stripe.com/...";
     case "iban":
       return "IBAN or account number";
     case "btc":
@@ -376,12 +385,17 @@ function PhoneNumberInput({
   value,
   onChange,
   placeholder,
+  countries = PHONE_COUNTRIES,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  countries?: typeof PHONE_COUNTRIES;
 }) {
-  const selected = detectDialCode(value) ?? "+880";
+  const [selectedCode, setSelectedCode] = useState(
+    detectDialCode(value, countries) ?? countries[0].code,
+  );
+  const selected = detectDialCode(value, countries) ?? selectedCode;
   const localValue = getLocalPhoneValue(value, selected);
 
   return (
@@ -389,13 +403,16 @@ function PhoneNumberInput({
       <div className="grid gap-2 sm:grid-cols-[140px_1fr]">
         <Select
           value={selected}
-          onValueChange={(code) => onChange(formatInternationalPhone(localValue, code))}
+          onValueChange={(code) => {
+            setSelectedCode(code);
+            onChange(formatInternationalPhone(localValue, code));
+          }}
         >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PHONE_COUNTRIES.map((country) => (
+            {countries.map((country) => (
               <SelectItem key={country.code} value={country.code}>
                 {country.label}
               </SelectItem>
@@ -417,9 +434,9 @@ function PhoneNumberInput({
   );
 }
 
-function detectDialCode(value: string) {
+function detectDialCode(value: string, countries = PHONE_COUNTRIES) {
   const compact = value.replace(/[^\d+]/g, "");
-  return PHONE_COUNTRIES.find((country) => compact.startsWith(country.code))?.code ?? null;
+  return countries.find((country) => compact.startsWith(country.code))?.code ?? null;
 }
 
 function getLocalPhoneValue(value: string, dialCode: string) {

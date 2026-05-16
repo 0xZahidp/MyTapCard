@@ -9,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -19,14 +22,13 @@ import {
   Plus,
   Trash2,
   FolderPlus,
-  GripVertical,
   Smile,
-  Palette,
   Type,
   BarChart3,
   Crown,
   Sticker,
   X,
+  Eye,
 } from "lucide-react";
 import { ReorderButtons } from "@/components/ui/reorder-buttons";
 import { moveItem } from "@/lib/reorder";
@@ -48,40 +50,88 @@ const GROUP_FONTS = [
   { id: "mono", name: "Mono" },
 ];
 
-const SOCIAL_PLATFORMS = [
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "telegram", label: "Telegram" },
-  { value: "discord", label: "Discord" },
-  { value: "wechat", label: "WeChat" },
-  { value: "signal", label: "Signal" },
-  { value: "line", label: "LINE" },
-  { value: "viber", label: "Viber" },
-  { value: "messenger", label: "Messenger" },
-  { value: "facebook", label: "Facebook" },
-  { value: "instagram", label: "Instagram" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "x", label: "X" },
-  { value: "threads", label: "Threads" },
-  { value: "youtube", label: "YouTube" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "github", label: "GitHub" },
-  { value: "snapchat", label: "Snapchat" },
-  { value: "pinterest", label: "Pinterest" },
-  { value: "reddit", label: "Reddit" },
-  { value: "medium", label: "Medium" },
-  { value: "dribbble", label: "Dribbble" },
-  { value: "behance", label: "Behance" },
-  { value: "twitch", label: "Twitch" },
-  { value: "spotify", label: "Spotify" },
-  { value: "skype", label: "Skype" },
-  { value: "slack", label: "Slack" },
-  { value: "patreon", label: "Patreon" },
-  { value: "substack", label: "Substack" },
-  { value: "quora", label: "Quora" },
-  { value: "tumblr", label: "Tumblr" },
-  { value: "mastodon", label: "Mastodon" },
-  { value: "bluesky", label: "Bluesky" },
-  { value: "clubhouse", label: "Clubhouse" },
+const EMAIL_PLATFORMS = [
+  { value: "gmail", label: "Gmail" },
+  { value: "outlook", label: "Outlook" },
+  { value: "yahoo", label: "Yahoo Mail" },
+  { value: "proton", label: "Proton Mail" },
+  { value: "apple-mail", label: "Apple Mail" },
+  { value: "custom-email", label: "Custom Email" },
+];
+
+const SOCIAL_PLATFORM_GROUPS = [
+  {
+    label: "Messaging",
+    items: [
+      { value: "whatsapp", label: "WhatsApp" },
+      { value: "telegram", label: "Telegram" },
+      { value: "discord", label: "Discord" },
+      { value: "wechat", label: "WeChat" },
+      { value: "signal", label: "Signal" },
+      { value: "line", label: "LINE" },
+      { value: "viber", label: "Viber" },
+      { value: "messenger", label: "Messenger" },
+    ],
+  },
+  {
+    label: "Social",
+    items: [
+      { value: "facebook", label: "Facebook" },
+      { value: "instagram", label: "Instagram" },
+      { value: "x", label: "X" },
+      { value: "threads", label: "Threads" },
+      { value: "youtube", label: "YouTube" },
+      { value: "tiktok", label: "TikTok" },
+      { value: "snapchat", label: "Snapchat" },
+      { value: "pinterest", label: "Pinterest" },
+      { value: "reddit", label: "Reddit" },
+      { value: "twitch", label: "Twitch" },
+      { value: "spotify", label: "Spotify" },
+      { value: "skype", label: "Skype" },
+      { value: "slack", label: "Slack" },
+      { value: "patreon", label: "Patreon" },
+      { value: "substack", label: "Substack" },
+      { value: "quora", label: "Quora" },
+      { value: "tumblr", label: "Tumblr" },
+      { value: "mastodon", label: "Mastodon" },
+      { value: "bluesky", label: "Bluesky" },
+      { value: "clubhouse", label: "Clubhouse" },
+    ],
+  },
+  {
+    label: "Professional",
+    items: [
+      { value: "linkedin", label: "LinkedIn" },
+      { value: "github", label: "GitHub" },
+      { value: "gitlab", label: "GitLab" },
+      { value: "behance", label: "Behance" },
+      { value: "dribbble", label: "Dribbble" },
+      { value: "medium", label: "Medium" },
+      { value: "devto", label: "Dev.to" },
+      { value: "stackoverflow", label: "Stack Overflow" },
+      { value: "fiverr", label: "Fiverr" },
+      { value: "upwork", label: "Upwork" },
+      { value: "freelancer", label: "Freelancer" },
+      { value: "crunchbase", label: "Crunchbase" },
+      { value: "wellfound", label: "AngelList / Wellfound" },
+    ],
+  },
+  {
+    label: "Web3 / Crypto",
+    items: [
+      { value: "ens", label: "ENS" },
+      { value: "lens", label: "Lens" },
+      { value: "farcaster", label: "Farcaster" },
+    ],
+  },
+  {
+    label: "Business",
+    items: [
+      { value: "google-maps", label: "Google Maps Location" },
+      { value: "booking", label: "Booking Link" },
+      { value: "store", label: "Store" },
+    ],
+  },
 ];
 
 const PHONE_COUNTRIES = [
@@ -617,7 +667,16 @@ function LinkEditor({
           )}
         </div>
         <div className="flex-1 grid gap-2 sm:grid-cols-[140px_1fr]">
-          <Select value={link.type} onValueChange={(v) => onChange(link.id, { type: v })}>
+          <Select
+            value={link.type}
+            onValueChange={(v) =>
+              onChange(link.id, {
+                type: v,
+                platform:
+                  v === link.type && (v === "social" || v === "email") ? link.platform : null,
+              })
+            }
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -641,7 +700,23 @@ function LinkEditor({
         </Button>
       </div>
       <div className="mt-2 grid gap-2 sm:grid-cols-[140px_1fr]">
-        {link.type === "social" ? (
+        {link.type === "email" ? (
+          <Select
+            value={link.platform ?? ""}
+            onValueChange={(v) => onChange(link.id, { platform: v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Mail app" />
+            </SelectTrigger>
+            <SelectContent>
+              {EMAIL_PLATFORMS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : link.type === "social" ? (
           <Select
             value={link.platform ?? ""}
             onValueChange={(v) => onChange(link.id, { platform: v })}
@@ -650,10 +725,16 @@ function LinkEditor({
               <SelectValue placeholder="Platform" />
             </SelectTrigger>
             <SelectContent>
-              {SOCIAL_PLATFORMS.map((p) => (
-                <SelectItem key={p.value} value={p.value}>
-                  {p.label}
-                </SelectItem>
+              {SOCIAL_PLATFORM_GROUPS.map((group, index) => (
+                <SelectGroup key={group.label}>
+                  {index > 0 && <SelectSeparator />}
+                  <SelectLabel className="text-xs text-muted-foreground">{group.label}</SelectLabel>
+                  {group.items.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               ))}
             </SelectContent>
           </Select>
@@ -704,7 +785,8 @@ function PhoneNumberInput({
   onChange: (value: string) => void;
   placeholder: string;
 }) {
-  const selected = detectDialCode(value) ?? "+880";
+  const [selectedCode, setSelectedCode] = useState(detectDialCode(value) ?? "+880");
+  const selected = detectDialCode(value) ?? selectedCode;
   const localValue = getLocalPhoneValue(value, selected);
 
   return (
@@ -712,7 +794,10 @@ function PhoneNumberInput({
       <div className="grid gap-2 sm:grid-cols-[140px_1fr]">
         <Select
           value={selected}
-          onValueChange={(code) => onChange(formatInternationalPhone(localValue, code))}
+          onValueChange={(code) => {
+            setSelectedCode(code);
+            onChange(formatInternationalPhone(localValue, code));
+          }}
         >
           <SelectTrigger>
             <SelectValue />
@@ -783,29 +868,33 @@ function ProAnalytics({
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            Link analytics
+            Views and tap analytics
             <span className="rounded-full bg-gradient-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
               PRO
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            See opens by link type and the last visit on each link. Upgrade to unlock analytics.
+            See profile views, taps by link type, and recent activity. Upgrade to unlock analytics.
           </p>
         </div>
       </section>
     );
   }
 
-  const total = clicks.length;
-  const byType = clicks.reduce<Record<string, number>>((acc, c) => {
+  const views = clicks.filter((c) => c.link_type === "profile_view");
+  const taps = clicks.filter((c) => c.link_type !== "profile_view");
+  const total = taps.length;
+  const totalViews = views.length;
+  const byType = taps.reduce<Record<string, number>>((acc, c) => {
     acc[c.link_type] = (acc[c.link_type] ?? 0) + 1;
     return acc;
   }, {});
-  const lastByType = clicks.reduce<Record<string, string>>((acc, c) => {
+  const lastByType = taps.reduce<Record<string, string>>((acc, c) => {
     if (!acc[c.link_type]) acc[c.link_type] = c.clicked_at;
     return acc;
   }, {});
-  const lastVisited = clicks[0]?.clicked_at;
+  const lastVisited = taps[0]?.clicked_at;
+  const lastViewed = views[0]?.clicked_at;
   const sorted = Object.entries(byType).sort((a, b) => b[1] - a[1]);
   const max = sorted[0]?.[1] ?? 1;
 
@@ -821,10 +910,31 @@ function ProAnalytics({
               Link analytics <Crown className="h-4 w-4 text-yellow-500" />
             </h2>
             <p className="text-xs text-muted-foreground">
-              {total === 0
-                ? "No clicks recorded yet — share your card to get started."
-                : `${total} total click${total === 1 ? "" : "s"} · last visit ${lastVisited ? timeAgo(lastVisited) : "—"}`}
+              {totalViews === 0 && total === 0
+                ? "No activity recorded yet - share your card to get started."
+                : `${totalViews} view${totalViews === 1 ? "" : "s"} · ${total} tap${total === 1 ? "" : "s"}`}
             </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl bg-secondary/40 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <Eye className="h-4 w-4" /> Views
+          </div>
+          <div className="mt-1 text-2xl font-bold tabular-nums">{totalViews}</div>
+          <div className="text-xs text-muted-foreground">
+            Last {lastViewed ? timeAgo(lastViewed) : "-"}
+          </div>
+        </div>
+        <div className="rounded-2xl bg-secondary/40 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <BarChart3 className="h-4 w-4" /> Taps
+          </div>
+          <div className="mt-1 text-2xl font-bold tabular-nums">{total}</div>
+          <div className="text-xs text-muted-foreground">
+            Last {lastVisited ? timeAgo(lastVisited) : "-"}
           </div>
         </div>
       </div>

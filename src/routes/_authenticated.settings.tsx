@@ -10,7 +10,17 @@ import { Label } from "@/components/ui/label";
 import { PasswordField } from "@/components/ui/password-field";
 import { useGlobalLoading } from "@/components/ui/loading-overlay";
 import { Textarea } from "@/components/ui/textarea";
-import { KeyRound, Link as LinkIcon, ShieldCheck, Sparkles, Crown, Copy, Gift } from "lucide-react";
+import {
+  KeyRound,
+  Link as LinkIcon,
+  ShieldCheck,
+  Sparkles,
+  Crown,
+  Copy,
+  Gift,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { getOAuthRedirectUrl } from "@/lib/oauth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -29,6 +39,7 @@ function SettingsPage() {
   const [identities, setIdentities] = useState<{ provider: string; id: string }[]>([]);
   const [reqMsg, setReqMsg] = useState("");
   const [reqStatus, setReqStatus] = useState<string | null>(null);
+  const [referralPage, setReferralPage] = useState(1);
   const [referrals, setReferrals] = useState<
     Array<{
       id: string;
@@ -85,6 +96,15 @@ function SettingsPage() {
     (r) => r.rewarded && Date.now() - new Date(r.created_at).getTime() < 30 * 86400000,
   ).length;
   const remainingThisMonth = Math.max(0, 10 - monthRewards);
+  const referralsPerPage = 10;
+  const referralPageCount = Math.max(1, Math.ceil(referrals.length / referralsPerPage));
+  const visibleReferrals = referrals.slice(
+    (referralPage - 1) * referralsPerPage,
+    referralPage * referralsPerPage,
+  );
+  useEffect(() => {
+    setReferralPage((page) => Math.min(page, referralPageCount));
+  }, [referralPageCount]);
 
   async function requestPro() {
     if (!user) return;
@@ -272,7 +292,7 @@ function SettingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {referrals.slice(0, 20).map((r) => (
+                {visibleReferrals.map((r) => (
                   <tr key={r.id} className="border-t border-border">
                     <td className="px-3 py-2">{r.name ?? r.referred_id.slice(0, 8)}</td>
                     <td className="px-3 py-2 text-muted-foreground">
@@ -289,6 +309,29 @@ function SettingsPage() {
                 ))}
               </tbody>
             </table>
+            <div className="flex items-center justify-between gap-3 border-t border-border bg-secondary/30 px-3 py-2">
+              <div className="text-xs text-muted-foreground">
+                Page {referralPage} of {referralPageCount}
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReferralPage((page) => Math.max(1, page - 1))}
+                  disabled={referralPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" /> Prev
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReferralPage((page) => Math.min(referralPageCount, page + 1))}
+                  disabled={referralPage >= referralPageCount}
+                >
+                  Next <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </section>

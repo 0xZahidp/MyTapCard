@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -64,6 +64,7 @@ function SubscriptionPage() {
   const [message, setMessage] = useState("");
   const [paymentRef, setPaymentRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const paymentSectionRef = useRef<HTMLElement | null>(null);
 
   async function reload() {
     if (!user) return;
@@ -100,6 +101,19 @@ function SubscriptionPage() {
   const proUntil = profile?.pro_until ? new Date(profile.pro_until) : null;
   const pendingKinds = new Set(requests.filter((r) => r.status === "pending").map((r) => r.kind));
   const selectedPayment = paymentMethods.find((method) => method.method === paymentMethod);
+
+  function openRequest(kind: "buy" | "extend" | "cancel") {
+    setActiveKind(kind);
+    if (kind !== "cancel") {
+      setPaymentMethod(paymentMethods[0]?.method || "");
+    }
+    setMessage("");
+    setPaymentRef("");
+
+    window.setTimeout(() => {
+      paymentSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }
 
   async function submit() {
     if (!user || !activeKind) return;
@@ -192,12 +206,7 @@ function SubscriptionPage() {
           variant="hero"
           disabled={isPro || pendingKinds.has("buy")}
           pending={pendingKinds.has("buy")}
-          onClick={() => {
-            setActiveKind("buy");
-            setPaymentMethod(paymentMethods[0]?.method || "");
-            setMessage("");
-            setPaymentRef("");
-          }}
+          onClick={() => openRequest("buy")}
         />
         <ActionCard
           icon={Repeat}
@@ -208,12 +217,7 @@ function SubscriptionPage() {
           variant="default"
           disabled={pendingKinds.has("extend")}
           pending={pendingKinds.has("extend")}
-          onClick={() => {
-            setActiveKind("extend");
-            setPaymentMethod(paymentMethods[0]?.method || "");
-            setMessage("");
-            setPaymentRef("");
-          }}
+          onClick={() => openRequest("extend")}
         />
         <ActionCard
           icon={Ban}
@@ -224,17 +228,17 @@ function SubscriptionPage() {
           variant="outline"
           disabled={!isPro || pendingKinds.has("cancel")}
           pending={pendingKinds.has("cancel")}
-          onClick={() => {
-            setActiveKind("cancel");
-            setMessage("");
-            setPaymentRef("");
-          }}
+          onClick={() => openRequest("cancel")}
         />
       </section>
 
       {/* Form */}
       {activeKind && (
-        <section className="rounded-3xl border border-border bg-card p-6 shadow-soft animate-fade-in">
+        <section
+          id="subscription-payment"
+          ref={paymentSectionRef}
+          className="rounded-3xl border border-border bg-card p-6 shadow-soft animate-fade-in"
+        >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               {activeKind === "cancel" ? (
