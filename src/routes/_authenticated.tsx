@@ -65,6 +65,20 @@ function AuthLayout() {
   }, [loading, navigate, user]);
 
   useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  useEffect(() => {
     if (!user) return;
 
     let cancelled = false;
@@ -130,7 +144,14 @@ function AuthLayout() {
           </div>
           <span className="font-bold">MyTapCard</span>
         </Link>
-        <Button variant="ghost" size="icon" onClick={() => setOpen((o) => !o)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Close navigation" : "Open navigation"}
+          aria-expanded={open}
+          aria-controls="dashboard-navigation"
+        >
           {open ? <X /> : <Menu />}
         </Button>
       </header>
@@ -138,22 +159,43 @@ function AuthLayout() {
       <div className="flex">
         {/* Sidebar */}
         <aside
+          id="dashboard-navigation"
           className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-card transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
         >
+          <div className="flex h-14 items-center justify-between border-b border-border px-4 md:hidden">
+            <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
+                <CreditCard className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-bold">MyTapCard</span>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpen(false)}
+              aria-label="Close navigation"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
           <div className="hidden h-16 items-center gap-2 border-b border-border px-5 md:flex">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
               <CreditCard className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-bold tracking-tight">MyTapCard</span>
           </div>
-          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Dashboard">
+            <div className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Workspace
+            </div>
             {navItems.map((item) => {
-              const active = pathname === item.to;
+              const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
               return (
                 <Link
                   key={item.to}
                   to={item.to}
                   onClick={() => setOpen(false)}
+                  aria-current={active ? "page" : undefined}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-smooth ${active ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
                 >
                   <item.icon className="h-4 w-4" /> {item.label}
@@ -163,8 +205,17 @@ function AuthLayout() {
           </nav>
           <div className="mt-auto space-y-2 p-3">
             <div className="rounded-xl border border-border bg-secondary/50 p-3 text-xs">
-              <div className="truncate font-semibold text-foreground">{user?.email}</div>
-              <div className="text-muted-foreground">Signed in</div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate font-semibold text-foreground">{user?.email}</div>
+                  <div className="text-muted-foreground">Signed in</div>
+                </div>
+                {(isAdmin || isPro) && (
+                  <span className="shrink-0 rounded-full bg-background px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground">
+                    {isAdmin ? "Admin" : isTrial ? "Trial" : "Pro"}
+                  </span>
+                )}
+              </div>
             </div>
             <Button variant="outline" size="sm" className="w-full" onClick={logout}>
               <LogOut className="h-4 w-4" /> Sign out
@@ -179,8 +230,8 @@ function AuthLayout() {
           />
         )}
 
-        <main className="flex-1 min-w-0">
-          <div className="mx-auto max-w-4xl px-4 py-8 md:px-8 md:py-10">
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto max-w-4xl px-4 py-6 pb-24 md:px-8 md:py-10 md:pb-16">
             <Outlet />
           </div>
         </main>

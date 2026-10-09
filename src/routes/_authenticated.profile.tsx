@@ -15,13 +15,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FormattedBio } from "@/components/formatted-bio";
 import {
   Bold,
+  CheckCircle2,
   Copy,
   ExternalLink,
   Heading2,
   Italic,
   Link as LinkIcon,
   List,
+  Loader2,
   Quote,
+  Save,
   Trash2,
   User as UserIcon,
   Upload,
@@ -52,12 +55,14 @@ function ProfilePage() {
   const { user } = useAuth();
   const { isPro, isTrial, loading: proLoading } = useProStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingUsername, setSavingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const bioRef = useRef<HTMLTextAreaElement>(null);
-  useGlobalLoading(saving || uploading, "profile-actions");
+  useGlobalLoading(saving || savingUsername || uploading, "profile-actions");
 
   useEffect(() => {
     if (!user) return;
@@ -67,26 +72,33 @@ function ProfilePage() {
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        setProfile(data as Profile);
+        const nextProfile = data as Profile;
+        setProfile(nextProfile);
+        setSavedProfile(nextProfile);
         setLoading(false);
       });
   }, [user]);
 
+  const hasUnsavedChanges =
+    !!profile && !!savedProfile && JSON.stringify(profile) !== JSON.stringify(savedProfile);
+  const usernameDirty = profile?.username !== savedProfile?.username;
+  const usernameError = getUsernameError(profile?.username ?? "", isPro);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [hasUnsavedChanges]);
+
   async function save() {
     if (!profile || !user) return;
     if (profile.username) {
-      const u = profile.username;
-      if (!USERNAME_RE.test(u) || u.length > 30) {
-        toast.error("Username must be letters, numbers or underscores (max 30)");
-        return;
-      }
-      const minLen = isPro ? 3 : 5;
-      if (u.length < minLen) {
-        toast.error(
-          isPro
-            ? "Username must be at least 3 characters"
-            : "Free usernames must be at least 5 characters — upgrade to Pro for shorter names",
-        );
+      const error = getUsernameError(profile.username, isPro);
+      if (error) {
+        toast.error(error);
         return;
       }
     }
@@ -107,10 +119,35 @@ function ProfilePage() {
       .eq("id", user.id);
     setSaving(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(getProfileSaveError(error));
       return;
     }
+    setSavedProfile({ ...profile });
     toast.success("Profile saved");
+  }
+
+  async function saveUsername() {
+    if (!profile || !user || !usernameDirty) return;
+    const errorMessage = getUsernameError(profile.username ?? "", isPro);
+    if (errorMessage) {
+      toast.error(errorMessage);
+      return;
+    }
+
+    setSavingUsername(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ username: profile.username } as any)
+      .eq("id", user.id);
+    setSavingUsername(false);
+
+    if (error) {
+      toast.error(getProfileSaveError(error));
+      return;
+    }
+
+    setSavedProfile((current) => (current ? { ...current, username: profile.username } : current));
+    toast.success("Username saved");
   }
 
   async function handleFile(file: File) {
@@ -141,6 +178,7 @@ function ProfilePage() {
         .update({ avatar_url: url })
         .eq("id", user.id);
       if (error) throw error;
+      setSavedProfile((current) => (current ? { ...current, avatar_url: url } : current));
       toast.success(`Photo updated (${(blob.size / 1024).toFixed(0)} KB)`);
     } catch (e: any) {
       toast.error(e.message ?? "Upload failed");
@@ -152,7 +190,16 @@ function ProfilePage() {
   async function removeAvatar() {
     if (!user || !profile) return;
     setProfile({ ...profile, avatar_url: null });
-    await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("id", user.id);
+    if (error) {
+      setProfile(profile);
+      toast.error(error.message);
+      return;
+    }
+    setSavedProfile((current) => (current ? { ...current, avatar_url: null } : current));
     toast.success("Photo removed");
   }
 
@@ -187,7 +234,9 @@ function ProfilePage() {
   if (loading || proLoading) return <div className="text-muted-foreground">Loading…</div>;
   if (!profile) return <div>No profile</div>;
 
-  const publicUrl = profile.username ? `${window.location.origin}/${profile.username}` : null;
+  const publicUrl = savedProfile?.username
+    ? `${window.location.origin}/${savedProfile.username}`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -295,16 +344,56 @@ function ProfilePage() {
                 </span>
               )}
             </Label>
-            <div className="flex items-center rounded-xl border border-input bg-background pl-3">
-              <span className="text-sm text-muted-foreground">/</span>
-              <input
-                id="username"
-                placeholder="yourname"
-                value={profile.username ?? ""}
-                onChange={(e) => setProfile({ ...profile, username: e.target.value.trim() })}
-                className="h-10 flex-1 bg-transparent px-2 text-sm outline-none"
-              />
+            <div className="flex gap-2">
+              <div
+                className={`flex min-w-0 flex-1 items-center rounded-xl border bg-background pl-3 transition-colors ${usernameDirty ? "border-primary" : "border-input"}`}
+              >
+                <span className="text-sm text-muted-foreground">/</span>
+                <input
+                  id="username"
+                  placeholder="yourname"
+                  value={profile.username ?? ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, username: e.target.value.replace(/\s/g, "") })
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void saveUsername();
+                  }}
+                  aria-invalid={usernameDirty && !!usernameError}
+                  aria-describedby="username-status"
+                  className="h-10 min-w-0 flex-1 bg-transparent px-2 text-sm outline-none"
+                />
+              </div>
+              <Button
+                type="button"
+                variant={usernameDirty ? "hero" : "outline"}
+                onClick={saveUsername}
+                disabled={!usernameDirty || savingUsername || !!usernameError}
+                className="shrink-0"
+              >
+                {savingUsername ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : usernameDirty ? (
+                  <Save className="h-4 w-4" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">
+                  {savingUsername ? "Saving" : usernameDirty ? "Save" : "Saved"}
+                </span>
+              </Button>
             </div>
+            <p
+              id="username-status"
+              className={`text-xs ${usernameDirty && usernameError ? "text-destructive" : "text-muted-foreground"}`}
+              aria-live="polite"
+            >
+              {usernameDirty
+                ? usernameError || "Save to update your public profile URL."
+                : savedProfile?.username
+                  ? "Your username is saved and live."
+                  : "Choose a username to publish your profile URL."}
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="display">Display name</Label>
@@ -433,11 +522,48 @@ function ProfilePage() {
         )}
       </section>
 
-      <div className="flex justify-end">
-        <Button variant="hero" size="lg" onClick={save} disabled={saving}>
-          {saving ? "Saving…" : "Save changes"}
+      <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0" aria-live="polite">
+          <div className="text-sm font-semibold">
+            {hasUnsavedChanges ? "You have unsaved changes" : "All profile changes are saved"}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {hasUnsavedChanges
+              ? "Save before leaving this page so your public card stays up to date."
+              : "Your public profile is up to date."}
+          </div>
+        </div>
+        <Button
+          variant={hasUnsavedChanges ? "hero" : "outline"}
+          size="lg"
+          onClick={save}
+          disabled={saving || !hasUnsavedChanges}
+          className="w-full shrink-0 sm:w-auto"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {saving ? "Saving…" : "Save profile"}
         </Button>
       </div>
     </div>
   );
+}
+
+function getUsernameError(username: string, isPro: boolean) {
+  if (!username) return "Username is required";
+  if (!USERNAME_RE.test(username)) return "Use only letters, numbers, and underscores";
+  if (username.length > 30) return "Username must be 30 characters or fewer";
+  const minLength = isPro ? 3 : 5;
+  if (username.length < minLength) {
+    return isPro
+      ? "Username must be at least 3 characters"
+      : "Free usernames need 5 characters; Pro supports 3";
+  }
+  return null;
+}
+
+function getProfileSaveError(error: { code?: string; message: string }) {
+  if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
+    return "That username is already taken. Try another one.";
+  }
+  return error.message;
 }
