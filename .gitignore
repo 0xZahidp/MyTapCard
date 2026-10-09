@@ -19,6 +19,9 @@ dist-ssr
 .env
 .env.*
 
+# Supabase CLI local link/cache metadata
+supabase/.temp/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

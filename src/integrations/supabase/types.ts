@@ -1,10 +1,10 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+﻿export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5";
+    PostgrestVersion: "14.18";
   };
   public: {
     Tables: {
@@ -235,6 +235,42 @@ export type Database = {
           },
         ];
       };
+      pro_payment_methods: {
+        Row: {
+          account: string;
+          created_at: string;
+          enabled: boolean;
+          id: string;
+          instructions: string | null;
+          label: string;
+          method: string;
+          position: number;
+          updated_at: string;
+        };
+        Insert: {
+          account?: string;
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          instructions?: string | null;
+          label: string;
+          method: string;
+          position?: number;
+          updated_at?: string;
+        };
+        Update: {
+          account?: string;
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          instructions?: string | null;
+          label?: string;
+          method?: string;
+          position?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       pro_requests: {
         Row: {
           amount: number | null;
@@ -426,11 +462,17 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_grant_pro: {
+        Args: { _days?: number; _user_id: string };
+        Returns: undefined;
+      };
       admin_set_pro: {
         Args: { _is_pro: boolean; _user_id: string };
         Returns: undefined;
       };
-      approve_pro_request: { Args: { _request_id: string }; Returns: undefined };
+      approve_pro_request:
+        | { Args: { _request_id: string }; Returns: undefined }
+        | { Args: { _days?: number; _request_id: string }; Returns: undefined };
       cancel_pro_request: { Args: { _request_id: string }; Returns: undefined };
       expire_pro_users: { Args: never; Returns: undefined };
       extend_pro_request: {

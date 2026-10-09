@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { DotLottieReact, type DotLottie } from "@lottiefiles/dotlottie-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Zap,
@@ -11,6 +13,8 @@ import {
   Sparkles,
   Check,
   CreditCard,
+  Menu,
+  X,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -45,21 +49,24 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 sm:pb-0">
       <Header />
       <Hero />
       <Features />
       <HowItWorks />
       <Pricing />
       <Footer />
+      <MobileActionBar />
     </div>
   );
 }
 
 function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/50 bg-background/70 backdrop-blur-xl">
-      <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <div className="container mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:h-16">
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-soft">
             <CreditCard className="h-5 w-5 text-primary-foreground" />
@@ -82,10 +89,46 @@ function Header() {
             <Link to="/auth/login">Log in</Link>
           </Button>
           <Button asChild variant="hero" size="sm">
-            <Link to="/auth/register">Get started</Link>
+            <Link to="/auth/register" className="hidden sm:inline-flex">
+              Get started
+            </Link>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
+      {menuOpen && (
+        <nav className="border-t border-border/60 bg-background/95 px-4 py-3 shadow-soft md:hidden">
+          <div className="mx-auto grid max-w-6xl gap-1">
+            {[
+              ["Features", "#features"],
+              ["How it works", "#how"],
+              ["Pricing", "#pricing"],
+            ].map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary"
+                onClick={() => setMenuOpen(false)}
+              >
+                {label}
+              </a>
+            ))}
+            <Button asChild variant="outline" className="mt-2 w-full">
+              <Link to="/auth/login">Log in</Link>
+            </Button>
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
@@ -93,31 +136,33 @@ function Header() {
 function Hero() {
   return (
     <section className="bg-hero relative overflow-hidden">
-      <div className="container mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 py-20 md:py-28 lg:grid-cols-2">
-        <div>
+      <HeroDots />
+      <div className="container relative z-10 mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-10 sm:py-16 md:py-24 lg:grid-cols-2 lg:gap-12">
+        <div className="text-center lg:text-left">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-accent" />
             One link. Tap. QR. NFC.
           </span>
-          <h1 className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
-            Your <span className="text-gradient">digital identity</span>,<br />
+          <h1 className="mt-5 text-[2.6rem] font-bold leading-[1.02] tracking-[-0.04em] sm:text-5xl md:text-6xl">
+            Your <span className="text-gradient">digital identity</span>,
+            <br className="hidden sm:block" />
             shared in a single tap.
           </h1>
-          <p className="mt-5 max-w-lg text-base text-muted-foreground sm:text-lg">
+          <p className="mx-auto mt-5 max-w-lg text-[0.95rem] leading-7 text-muted-foreground sm:text-lg lg:mx-0">
             Build a beautiful profile page, collect every link in one place, and share it with a QR
             code or premium NFC tap card.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild variant="hero" size="lg">
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <Button asChild variant="hero" size="lg" className="w-full sm:w-auto">
               <Link to="/auth/register">
                 Create your card <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
               <a href="#how">See how it works</a>
             </Button>
           </div>
-          <div className="mt-8 flex items-center gap-6 text-xs text-muted-foreground">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground lg:justify-start">
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-accent" /> Free forever plan
             </div>
@@ -127,7 +172,7 @@ function Hero() {
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-sm">
+        <div className="relative mx-auto w-full max-w-[22rem] sm:max-w-xl">
           <PhoneMock />
         </div>
       </div>
@@ -136,33 +181,90 @@ function Hero() {
 }
 
 function PhoneMock() {
+  const { reduceMotion, setPlayer } = useLottiePlayback();
+
   return (
     <div className="relative">
       <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-gradient-primary opacity-20 blur-3xl" />
-      <div className="rounded-[2.5rem] border border-border bg-card p-3 shadow-elegant">
-        <div className="overflow-hidden rounded-[2rem] bg-gradient-sand">
-          <div className="bg-gradient-primary p-6 pb-16 text-primary-foreground">
-            <div className="mx-auto h-20 w-20 rounded-full border-4 border-primary-foreground/30 bg-sand shadow-glow" />
-            <h3 className="mt-3 text-center text-xl font-bold">Alex Morgan</h3>
-            <p className="text-center text-sm text-primary-foreground/80">@alexmorgan</p>
-            <p className="mx-auto mt-2 max-w-[14rem] text-center text-xs text-primary-foreground/80">
-              Product designer · coffee enthusiast · always shipping
-            </p>
+      <div className="overflow-hidden rounded-[2rem] border border-border/70 bg-card p-2 shadow-elegant sm:rounded-[2.5rem] sm:p-3">
+        <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-sand sm:rounded-[2rem]">
+          <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-3 py-1.5 text-[0.65rem] font-semibold text-primary shadow-soft backdrop-blur sm:left-5 sm:top-5 sm:text-xs">
+            <span className="h-2 w-2 rounded-full bg-accent shadow-glow" />
+            Build once. Share everywhere.
           </div>
-          <div className="-mt-10 space-y-2 px-4 pb-6">
-            {["Portfolio", "LinkedIn", "Email me", "WhatsApp"].map((l) => (
-              <div
-                key={l}
-                className="rounded-xl bg-card px-4 py-3 text-center text-sm font-semibold shadow-soft"
-              >
-                {l}
-              </div>
-            ))}
+          <div className="aspect-[921/622] w-full">
+            <DotLottieReact
+              src="/animations/mytapcard-app-list.lottie"
+              autoplay={!reduceMotion}
+              loop={!reduceMotion}
+              speed={0.85}
+              dotLottieRefCallback={setPlayer}
+              className="h-full w-full"
+              aria-label="Animated MyTapCard profile link list"
+              role="img"
+              renderConfig={{ autoResize: true, devicePixelRatio: 1.5 }}
+            />
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function HeroDots() {
+  const { reduceMotion, setPlayer } = useLottiePlayback();
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-[0.16] mix-blend-multiply"
+      aria-hidden="true"
+    >
+      <DotLottieReact
+        src="/animations/mytapcard-hero-dots.lottie"
+        autoplay={!reduceMotion}
+        loop={!reduceMotion}
+        speed={0.65}
+        dotLottieRefCallback={setPlayer}
+        className="h-full w-full scale-110"
+        renderConfig={{ autoResize: true, devicePixelRatio: 1 }}
+      />
+    </div>
+  );
+}
+
+function useReducedMotion() {
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setReduceMotion(media.matches);
+
+    updatePreference();
+    media.addEventListener("change", updatePreference);
+    return () => media.removeEventListener("change", updatePreference);
+  }, []);
+
+  return reduceMotion;
+}
+
+function useLottiePlayback() {
+  const reduceMotion = useReducedMotion();
+  const [player, setPlayer] = useState<DotLottie | null>(null);
+
+  useEffect(() => {
+    if (!player) return;
+
+    const syncPlayback = () => {
+      if (reduceMotion) player.pause();
+      else player.play();
+    };
+
+    syncPlayback();
+    player.addEventListener("load", syncPlayback);
+    return () => player.removeEventListener("load", syncPlayback);
+  }, [player, reduceMotion]);
+
+  return { reduceMotion, setPlayer };
 }
 
 function Features() {
@@ -361,5 +463,23 @@ function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+function MobileActionBar() {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-background/90 p-3 backdrop-blur-xl sm:hidden">
+      <div className="mx-auto flex max-w-md items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">Your card is minutes away</p>
+          <p className="text-xs text-muted-foreground">Free plan · No credit card</p>
+        </div>
+        <Button asChild variant="hero" size="sm" className="shrink-0">
+          <Link to="/auth/register">
+            Create card <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+    </div>
   );
 }
