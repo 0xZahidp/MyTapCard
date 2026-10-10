@@ -329,7 +329,7 @@ function PhoneMock() {
           </div>
           <div className="aspect-[921/622] w-full">
             <DotLottieReact
-              src="/animations/mytapcard-app-list.lottie"
+              src="/animations/mytapcard-app-list-v2.lottie"
               autoplay={!reduceMotion}
               loop={!reduceMotion}
               speed={0.85}
