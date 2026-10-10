@@ -72,33 +72,62 @@ export const Route = createFileRoute("/$username")({
       financial: financial ?? [],
     };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          {
-            title: `${loaderData.profile.display_name ?? loaderData.profile.username} — MyTapCard`,
-          },
-          {
-            name: "description",
-            content:
-              loaderData.profile.bio ??
-              "View links, contact details, and payment options on this digital business card.",
-          },
-          {
-            property: "og:title",
-            content: `${loaderData.profile.display_name ?? loaderData.profile.username} — Digital Business Card`,
-          },
-          {
-            property: "og:description",
-            content:
-              loaderData.profile.bio ??
-              "A shareable profile with links, contact details, and QR-ready access.",
-          },
-          { property: "og:type", content: "profile" },
-          { name: "twitter:card", content: "summary" },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return {};
+    const name = loaderData.profile.display_name || loaderData.profile.username;
+    const username = loaderData.profile.username;
+    const bio =
+      loaderData.profile.bio ||
+      `Connect with ${name} on MyTapCard. Tap to view links, save contact info to your phone, or scan the QR code.`;
+    const avatar = loaderData.profile.avatar_url || "https://www.mytapcard.online/og-image.png";
+    const canonicalUrl = `https://www.mytapcard.online/${username}`;
+    const socialLinks = loaderData.links
+      .map((l: any) => l.value)
+      .filter((v: string) => typeof v === "string" && /^https?:\/\//i.test(v));
+
+    return {
+      meta: [
+        { title: `${name} (@${username}) — Digital Business Card | MyTapCard` },
+        { name: "description", content: bio },
+        {
+          name: "keywords",
+          content: `${name}, ${username}, digital business card, NFC card, contact profile, MyTapCard, smart card`,
+        },
+        { name: "robots", content: "index, follow, max-image-preview:large" },
+        { property: "og:site_name", content: "MyTapCard" },
+        { property: "og:title", content: `${name} — Digital Business Card` },
+        { property: "og:description", content: bio },
+        { property: "og:type", content: "profile" },
+        { property: "og:url", content: canonicalUrl },
+        { property: "og:image", content: avatar },
+        { property: "og:image:alt", content: `${name} profile photo` },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${name} (@${username}) | MyTapCard` },
+        { name: "twitter:description", content: bio },
+        { name: "twitter:image", content: avatar },
+      ],
+      links: [{ rel: "canonical", href: canonicalUrl }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            dateCreated: loaderData.profile.created_at,
+            mainEntity: {
+              "@type": "Person",
+              name: name,
+              alternateName: `@${username}`,
+              description: loaderData.profile.bio || undefined,
+              image: loaderData.profile.avatar_url || undefined,
+              url: canonicalUrl,
+              sameAs: socialLinks.length > 0 ? socialLinks : undefined,
+            },
+          }),
+        },
+      ],
+    };
+  },
   notFoundComponent: () => (
     <div className="grid min-h-screen place-items-center bg-hero">
       <div className="rounded-3xl glass p-10 text-center">

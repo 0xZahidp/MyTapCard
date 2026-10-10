@@ -16,33 +16,122 @@ import {
   CreditCard,
   Menu,
   X,
+  ChevronDown,
+  HelpCircle,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "MyTapCard — One tap. Every link. Every contact." },
+      { title: "MyTapCard — Digital Business Card, NFC Smart Card & Link in Bio" },
       {
         name: "description",
         content:
-          "A premium digital business card. Share your profile, links, and payment details with a single tap or QR scan.",
+          "Create your free digital business card with MyTapCard. Share contact details, portfolio links, social profiles, and payment channels instantly via NFC tap or QR code.",
       },
       {
         name: "keywords",
         content:
-          "digital business card, NFC card, QR profile, professional link page, share contact details",
+          "digital business card, NFC card, smart business card, QR code business card, link in bio, vCard contact, contactless card, digital identity, Bangladesh NFC card",
       },
       {
         property: "og:title",
-        content: "MyTapCard — Digital business cards for modern professionals",
+        content: "MyTapCard — Digital Business Card & Contactless Smart Card",
       },
       {
         property: "og:description",
         content:
-          "Create a polished profile, organize every link, and share it instantly with QR or NFC.",
+          "Create a polished profile, organize every link, and share it instantly with dynamic QR or contactless NFC tap.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://www.mytapcard.online/" },
+      { property: "og:image", content: "https://www.mytapcard.online/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "MyTapCard — Digital Business Card, NFC & QR Profile" },
+      {
+        name: "twitter:description",
+        content:
+          "Share contact info, social channels, and payment details in a single tap with MyTapCard.",
+      },
+      { name: "twitter:image", content: "https://www.mytapcard.online/og-image.png" },
+    ],
+    links: [{ rel: "canonical", href: "https://www.mytapcard.online/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "SoftwareApplication",
+              name: "MyTapCard",
+              operatingSystem: "All (Web, iOS, Android)",
+              applicationCategory: "BusinessApplication",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD",
+              },
+              description:
+                "Next-generation digital business card and contactless identity platform with NFC tap and dynamic QR code sharing.",
+              url: "https://www.mytapcard.online/",
+            },
+            {
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "What is MyTapCard?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "MyTapCard is a contactless digital identity platform that replaces traditional paper business cards with an interactive web profile, smart NFC tap cards, and dynamic QR codes.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Do other people need an app to view my card?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "No app or account is required. Anyone can tap your NFC card or scan your QR code with their smartphone camera to open your live profile immediately in their browser.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How does NFC tap sharing work?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Simply tap your MyTapCard physical NFC card against any modern iPhone or Android phone. The phone detects the contactless chip and instantly opens your digital card.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Can people save my contact details directly to their phone?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes. MyTapCard includes a 1-tap Save Contact (.vcf vCard) feature that allows anyone to save your name, phone number, email, and website directly into their phone address book.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "What links and payment methods can I connect?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "You can connect 70+ social networks, messaging apps (WhatsApp, Telegram), portfolios, and payment options including bKash, Nagad, Stripe, PayPal, and crypto wallets.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is MyTapCard free to use?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes, MyTapCard offers a generous free forever plan with customizable themes, unlimited link sharing, dynamic QR code generation, and instant contact sharing.",
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      },
     ],
   }),
   component: Landing,
@@ -57,6 +146,7 @@ function Landing() {
       <Features />
       <HowItWorks />
       <Pricing />
+      <FAQ />
       <Footer />
       <MobileActionBar />
     </div>
@@ -124,6 +214,9 @@ function Header() {
           <a href="#pricing" className="hover:text-foreground transition-smooth">
             Pricing
           </a>
+          <a href="#faq" className="hover:text-foreground transition-smooth">
+            FAQ
+          </a>
         </nav>
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
@@ -154,6 +247,7 @@ function Header() {
               ["Features", "#features"],
               ["How it works", "#how"],
               ["Pricing", "#pricing"],
+              ["FAQ", "#faq"],
             ].map(([label, href]) => (
               <a
                 key={href}
@@ -485,6 +579,85 @@ function PlanCard({
       </ul>
       <div className="mt-7">{cta}</div>
     </div>
+  );
+}
+
+const FAQS = [
+  {
+    q: "What is MyTapCard and how does it work?",
+    a: "MyTapCard is a contactless digital identity platform that replaces traditional paper cards. You create a polished profile with your contact details, social accounts, and payment links, then share it instantly with a single NFC card tap or dynamic QR code scan.",
+  },
+  {
+    q: "Do other people need an app to view my card?",
+    a: "No! Anyone can tap your NFC card or scan your QR code with their regular smartphone camera. Your live card opens directly in their browser without requiring any download or account creation.",
+  },
+  {
+    q: "How does NFC tap sharing work with phones?",
+    a: "Simply hold your physical MyTapCard against the back of any modern iPhone or Android device. The phone's built-in NFC reader detects your card and instantly prompts to open your digital profile.",
+  },
+  {
+    q: "Can recipients save my contact details directly to their phone?",
+    a: "Yes! Every MyTapCard page features a 1-tap 'Save Contact' (.vcf vCard) action. When tapped, it immediately imports your name, phone numbers, email, job title, and website directly into the recipient's phone address book.",
+  },
+  {
+    q: "What links and payment methods can I connect?",
+    a: "You can connect over 70+ social networks, professional platforms (LinkedIn, GitHub), messaging apps (WhatsApp, Telegram), and payment options including bKash, Nagad, Stripe, PayPal, and major crypto wallets.",
+  },
+  {
+    q: "Is MyTapCard free to use?",
+    a: "Yes! MyTapCard offers a generous Free Forever plan that includes unlimited profile views, social links, dynamic QR code generation, and instant contact sharing. Pro upgrades are available for advanced themes and analytics.",
+  },
+];
+
+function FAQ() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  return (
+    <section id="faq" className="border-t border-border/60 bg-hero py-16 sm:py-24">
+      <div className="container mx-auto max-w-4xl px-4">
+        <div className="text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+            <HelpCircle className="h-3.5 w-3.5 text-accent" />
+            Frequently Asked Questions
+          </span>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+            Everything you need to know about <span className="text-gradient">MyTapCard</span>
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
+            Got questions? Here are the answers to the most common questions about our contactless smart cards and digital profiles.
+          </p>
+        </div>
+
+        <div className="mt-10 space-y-3">
+          {FAQS.map((item, idx) => {
+            const isOpen = openIndex === idx;
+            return (
+              <div
+                key={item.q}
+                className="overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-soft backdrop-blur transition-all duration-200"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(isOpen ? null : idx)}
+                  className="flex w-full items-center justify-between gap-4 p-5 text-left text-base font-semibold hover:text-accent transition-colors"
+                  aria-expanded={isOpen}
+                >
+                  <span>{item.q}</span>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180 text-accent" : ""}`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground animate-in fade-in-50 duration-200">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
   );
 }
 

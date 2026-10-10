@@ -64,47 +64,118 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
       { title: "MyTapCard — Your digital business card, one tap away" },
       {
         name: "description",
         content:
-          "Create a beautiful digital profile, share with a link, QR code, or NFC tap card. Built for modern professionals.",
+          "Create a beautiful digital profile, share with a link, dynamic QR code, or contactless NFC tap card. Built for modern professionals, creators & teams.",
       },
       {
         name: "keywords",
         content:
-          "digital business card, NFC business card, QR code business card, link in bio, contact card, online profile",
+          "digital business card, NFC business card, smart business card, QR code business card, link in bio, contact card, contactless card, vCard generator, digital identity, Bangladesh NFC card",
       },
-      { name: "robots", content: "index, follow" },
+      {
+        name: "robots",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
+      {
+        name: "googlebot",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
+      { name: "bingbot", content: "index, follow" },
       { name: "author", content: "MyTapCard" },
-      { property: "og:title", content: "MyTapCard — One tap. Every link." },
+      { name: "creator", content: "Zahid" },
+      { name: "publisher", content: "MyTapCard" },
+      { name: "theme-color", content: "#090d16" },
+      { name: "application-name", content: "MyTapCard" },
+      { name: "apple-mobile-web-app-title", content: "MyTapCard" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "format-detection", content: "telephone=no" },
+
+      // Open Graph
+      { property: "og:site_name", content: "MyTapCard" },
+      { property: "og:title", content: "MyTapCard — One tap. Every link. Shared everywhere." },
       {
         property: "og:description",
-        content: "Digital tap cards & shareable profile pages for modern professionals.",
+        content:
+          "Next-generation digital business card. Share your profile, contacts, links, and payment options with a single NFC tap or QR scan.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "MyTapCard" },
+      { property: "og:url", content: "https://www.mytapcard.online/" },
+      { property: "og:image", content: "https://www.mytapcard.online/og-image.png" },
+      { property: "og:image:secure_url", content: "https://www.mytapcard.online/og-image.png" },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "MyTapCard — Digital Business Card Platform" },
+      { property: "og:locale", content: "en_US" },
+
+      // Twitter / X
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:site", content: "@mytapcard" },
+      { name: "twitter:creator", content: "@zahidp" },
       {
         name: "twitter:title",
-        content: "MyTapCard — Digital business cards with QR and NFC sharing",
+        content: "MyTapCard — Smart NFC & QR Digital Business Cards",
       },
       {
         name: "twitter:description",
         content:
-          "Build a polished digital profile and share it with a link, QR code, or NFC tap card.",
+          "Build a polished digital profile and share it instantly with a link, QR code, or NFC tap card.",
       },
+      { name: "twitter:image", content: "https://www.mytapcard.online/og-image.png" },
+      { name: "twitter:image:alt", content: "MyTapCard — Digital Business Card Preview" },
     ],
     links: [
       { rel: "icon", href: "/favicon.ico" },
+      { rel: "manifest", href: "/site.webmanifest" },
       { rel: "stylesheet", href: appCss },
-      { rel: "canonical", href: "https://mytapcard.com/" },
+      { rel: "canonical", href: "https://www.mytapcard.online/" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              "@id": "https://www.mytapcard.online/#website",
+              url: "https://www.mytapcard.online/",
+              name: "MyTapCard",
+              description: "Next-generation digital business card and contactless identity platform",
+              inLanguage: "en-US",
+              publisher: {
+                "@id": "https://www.mytapcard.online/#organization",
+              },
+            },
+            {
+              "@type": "Organization",
+              "@id": "https://www.mytapcard.online/#organization",
+              name: "MyTapCard",
+              url: "https://www.mytapcard.online/",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://www.mytapcard.online/og-image.png",
+              },
+              founder: {
+                "@type": "Person",
+                name: "Zahid Hasan",
+                url: "https://zahidp.com",
+              },
+              sameAs: ["https://zahidp.com"],
+            },
+          ],
+        }),
       },
     ],
   }),

@@ -1,0 +1,46 @@
+# ==============================================================================
+# MyTapCard Robots Configuration
+# https://www.mytapcard.online
+# ==============================================================================
+
+User-agent: *
+Allow: /
+Allow: /auth/login
+Allow: /auth/register
+Allow: /brand-icons/
+Allow: /animations/
+Allow: /og-image.png
+Allow: /og-image.svg
+Allow: /favicon.ico
+Allow: /site.webmanifest
+
+# Disallow authenticated app areas, management dashboards & private sessions
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /design
+Disallow: /links
+Disallow: /financial
+Disallow: /settings
+Disallow: /share
+Disallow: /subscription
+Disallow: /preview
+Disallow: /admin
+Disallow: /auth/callback
+Disallow: /auth/forgot-password
+Disallow: /auth/reset-password
+
+# Search Engine Crawlers Specific Rules
+User-agent: Googlebot
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /admin
+
+User-agent: Bingbot
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /admin
+
+# Canonical Sitemap Location
+Sitemap: https://www.mytapcard.online/sitemap.xml
