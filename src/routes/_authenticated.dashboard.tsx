@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
+import { motion, type Variants } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useProStatus } from "@/hooks/use-pro";
@@ -50,6 +51,58 @@ interface LinkClick {
   link_type: string;
   clicked_at: string;
 }
+
+// Lightweight, 60fps Native Number Counter (Zero bundle weight)
+function AnimatedNumber({ value }: { value: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (value === 0) {
+      setDisplayValue(0);
+      return;
+    }
+    let startTimestamp: number | null = null;
+    const duration = 600; // ms
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      // easeOutExpo for a snappy, satisfying counter
+      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setDisplayValue(Math.round(ease * value));
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+
+    const animId = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(animId);
+  }, [value]);
+
+  return <span>{displayValue}</span>;
+}
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: [0.25, 0.1, 0.25, 1],
+    },
+  },
+};
 
 function DashboardPage() {
   const { user } = useAuth();
@@ -243,9 +296,17 @@ function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-6"
+    >
       {/* Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <motion.header
+        variants={itemVariants}
+        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Welcome back{profile?.display_name ? `, ${profile.display_name.split(" ")[0]}` : ""}
@@ -259,17 +320,22 @@ function DashboardPage() {
             variant="ghost"
             size="sm"
             onClick={() => setWizardOpen(true)}
-            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-smooth"
             title="Take a quick tour of MyTapCard"
           >
             <Sparkles className="h-3.5 w-3.5 text-primary" /> Guide
           </Button>
           {publicUrl && (
             <>
-              <Button variant="outline" size="sm" onClick={() => setQrOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setQrOpen(true)}
+                className="transition-smooth"
+              >
                 <QrCode className="h-4 w-4" /> Quick QR
               </Button>
-              <Button asChild variant="hero" size="sm">
+              <Button asChild variant="hero" size="sm" className="transition-smooth">
                 <a href={publicUrl} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-4 w-4" /> View Card
                 </a>
@@ -277,11 +343,12 @@ function DashboardPage() {
             </>
           )}
         </div>
-      </header>
+      </motion.header>
 
       {/* Pro Expiry Alert */}
       {showExpiryNotice && (
-        <section
+        <motion.section
+          variants={itemVariants}
           className={`flex flex-wrap items-center gap-3 rounded-2xl border p-4 shadow-soft ${
             isExpiringSoon ? "border-amber-300 bg-amber-50 text-amber-950" : "border-border bg-card"
           }`}
@@ -315,109 +382,123 @@ function DashboardPage() {
           >
             <Link to="/subscription">{isExpiringSoon ? "Renew" : "Manage"}</Link>
           </Button>
-        </section>
+        </motion.section>
       )}
 
       {/* Profile Snapshot & Public URL Bar */}
-      {publicUrl ? (
-        <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4 min-w-0">
-            <Avatar className="h-14 w-14 ring-2 ring-primary/20 shrink-0">
-              <AvatarImage src={profile?.avatar_url ?? undefined} alt="Avatar" />
-              <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold">
-                {profile?.display_name?.[0] || profile?.username?.[0] || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-bold truncate text-base">
-                  {profile?.display_name || profile?.username}
-                </span>
-                {isPro && (
-                  <span className="rounded-full bg-gradient-gold px-2 py-0.5 text-[10px] font-bold text-foreground">
-                    PRO
+      <motion.div variants={itemVariants}>
+        {publicUrl ? (
+          <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between transition-colors hover:border-primary/30">
+            <div className="flex items-center gap-4 min-w-0">
+              <Avatar className="h-14 w-14 ring-2 ring-primary/20 shrink-0">
+                <AvatarImage src={profile?.avatar_url ?? undefined} alt="Avatar" />
+                <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold">
+                  {profile?.display_name?.[0] || profile?.username?.[0] || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold truncate text-base">
+                    {profile?.display_name || profile?.username}
                   </span>
-                )}
+                  {isPro && (
+                    <span className="rounded-full bg-gradient-gold px-2 py-0.5 text-[10px] font-bold text-foreground">
+                      PRO
+                    </span>
+                  )}
+                </div>
+                <p className="truncate font-mono text-xs text-muted-foreground mt-0.5">{publicUrl}</p>
               </div>
-              <p className="truncate font-mono text-xs text-muted-foreground mt-0.5">{publicUrl}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button variant="outline" size="sm" onClick={handleCopyLink} className="transition-smooth">
+                <Copy className="h-4 w-4" /> Copy Link
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setQrOpen(true)} className="transition-smooth">
+                <QrCode className="h-4 w-4" /> Show QR
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={handleCopyLink}>
-              <Copy className="h-4 w-4" /> Copy Link
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setQrOpen(true)}>
-              <QrCode className="h-4 w-4" /> Show QR
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border bg-card/60 p-5">
+            <h3 className="font-semibold">Pick your username</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Choose a unique username so people can find your digital business card.
+            </p>
+            <Button asChild variant="hero" size="sm" className="mt-3">
+              <Link to="/profile">Set username</Link>
             </Button>
           </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-dashed border-border bg-card/60 p-5">
-          <h3 className="font-semibold">Pick your username</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Choose a unique username so people can find your digital business card.
-          </p>
-          <Button asChild variant="hero" size="sm" className="mt-3">
-            <Link to="/profile">Set username</Link>
-          </Button>
-        </div>
-      )}
+        )}
+      </motion.div>
 
       {/* 4 Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {/* Total Clicks */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <motion.div
+          whileHover={{ y: -3, transition: { duration: 0.2 } }}
+          className="rounded-2xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-primary/40 hover:shadow-elegant"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase tracking-wider">Total Taps</span>
             <MousePointerClick className="h-4 w-4 text-primary" />
           </div>
           <div className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {totalClicks}
+            <AnimatedNumber value={totalClicks} />
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">Lifetime card link interactions</p>
-        </div>
+        </motion.div>
 
         {/* 7-Day Clicks */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <motion.div
+          whileHover={{ y: -3, transition: { duration: 0.2 } }}
+          className="rounded-2xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-emerald-500/40 hover:shadow-elegant"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase tracking-wider">7-Day Clicks</span>
             <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {clicksLast7Days.length}
+            <AnimatedNumber value={clicksLast7Days.length} />
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">Clicks in the last 7 days</p>
-        </div>
+        </motion.div>
 
         {/* Active Links */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <motion.div
+          whileHover={{ y: -3, transition: { duration: 0.2 } }}
+          className="rounded-2xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-blue-500/40 hover:shadow-elegant"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase tracking-wider">Active Links</span>
             <Link2 className="h-4 w-4 text-blue-500" />
           </div>
           <div className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {counts.links}
+            <AnimatedNumber value={counts.links} />
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">Contact & social platforms</p>
-        </div>
+        </motion.div>
 
         {/* Payment Methods */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <motion.div
+          whileHover={{ y: -3, transition: { duration: 0.2 } }}
+          className="rounded-2xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-amber-500/40 hover:shadow-elegant"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase tracking-wider">Payment Channels</span>
             <Wallet className="h-4 w-4 text-amber-500" />
           </div>
           <div className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {counts.financial}
+            <AnimatedNumber value={counts.financial} />
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">Wallets & payment methods</p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Analytics Breakdown & Top Links Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <motion.div variants={itemVariants} className="grid gap-6 lg:grid-cols-3">
         {/* 7-Day Tap Timeline Chart */}
-        <section className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft lg:col-span-2">
+        <section className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft lg:col-span-2 transition-colors hover:border-primary/30">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-base sm:text-lg font-bold">Tap & Click Activity</h2>
@@ -430,7 +511,7 @@ function DashboardPage() {
 
           {totalClicks > 0 ? (
             <div className="mt-6 flex h-44 items-end gap-2 sm:gap-4 pt-6 pb-2">
-              {dailyActivity.map((day) => {
+              {dailyActivity.map((day, i) => {
                 const heightPct = Math.max(12, Math.round((day.count / maxDailyCount) * 100));
                 return (
                   <div key={day.dateStr} className="flex-1 flex flex-col items-center gap-2 group">
@@ -438,8 +519,11 @@ function DashboardPage() {
                       {day.count}
                     </div>
                     <div className="w-full rounded-t-xl bg-secondary/80 overflow-hidden flex items-end h-28">
-                      <div
-                        className="w-full bg-gradient-primary rounded-t-xl transition-all duration-500 group-hover:brightness-110"
+                      <motion.div
+                        initial={{ scaleY: 0 }}
+                        animate={{ scaleY: 1 }}
+                        transition={{ duration: 0.5, delay: 0.1 + i * 0.05, ease: "easeOut" }}
+                        className="w-full bg-gradient-primary rounded-t-xl transition-all duration-300 group-hover:brightness-110 origin-bottom"
                         style={{ height: `${heightPct}%` }}
                       />
                     </div>
@@ -459,7 +543,7 @@ function DashboardPage() {
               <p className="mt-1 max-w-xs text-xs text-muted-foreground">
                 Tap your NFC card or share your QR code to start tracking live visitor engagement.
               </p>
-              <Button asChild variant="hero" size="sm" className="mt-4">
+              <Button asChild variant="hero" size="sm" className="mt-4 transition-smooth">
                 <Link to="/share">
                   <Share2 className="h-3.5 w-3.5 mr-1" /> Share Your Card
                 </Link>
@@ -469,7 +553,7 @@ function DashboardPage() {
         </section>
 
         {/* Top Performing Links */}
-        <section className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft flex flex-col">
+        <section className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft flex flex-col transition-colors hover:border-primary/30">
           <h2 className="text-base sm:text-lg font-bold">Top Performing Links</h2>
           <p className="text-xs text-muted-foreground">Most clicked links by visitors</p>
 
@@ -483,11 +567,11 @@ function DashboardPage() {
                       <span className="text-muted-foreground">{item.count} clicks</span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-primary rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.round((item.count / totalClicks) * 100)}%`,
-                        }}
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.round((item.count / totalClicks) * 100)}%` }}
+                        transition={{ duration: 0.6, delay: 0.15 + i * 0.08, ease: "easeOut" }}
+                        className="h-full bg-gradient-primary rounded-full"
                       />
                     </div>
                   </div>
@@ -503,18 +587,18 @@ function DashboardPage() {
           <div className="mt-4 pt-3 border-t border-border">
             <Link
               to="/links"
-              className="flex items-center justify-between text-xs font-semibold text-primary hover:underline"
+              className="flex items-center justify-between text-xs font-semibold text-primary hover:underline transition-colors"
             >
               <span>Manage all links ({counts.links})</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </section>
-      </div>
+      </motion.div>
 
       {/* Card Setup Checklist (if not 100% complete) */}
       {!isProfileComplete && (
-        <section className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft">
+        <motion.section variants={itemVariants} className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-soft">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -530,11 +614,13 @@ function DashboardPage() {
             </span>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress bar with smooth width reveal */}
           <div className="mt-3 h-2 w-full rounded-full bg-secondary overflow-hidden">
-            <div
-              className="h-full bg-gradient-primary rounded-full transition-all duration-500"
-              style={{ width: `${(completedSteps / checklist.length) * 100}%` }}
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${(completedSteps / checklist.length) * 100}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="h-full bg-gradient-primary rounded-full"
             />
           </div>
 
@@ -543,7 +629,7 @@ function DashboardPage() {
               <Link
                 key={item.id}
                 to={item.to}
-                className="flex items-center justify-between rounded-xl border border-border/60 bg-secondary/30 p-3 hover:bg-secondary/60 transition-colors"
+                className="flex items-center justify-between rounded-xl border border-border/60 bg-secondary/30 p-3 hover:bg-secondary/60 hover:border-primary/40 transition-colors"
               >
                 <div className="flex items-center gap-2.5 text-xs font-medium">
                   {item.done ? (
@@ -559,32 +645,34 @@ function DashboardPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* Quick Navigation Tiles */}
-      <div>
+      <motion.div variants={itemVariants}>
         <h2 className="text-base sm:text-lg font-bold mb-3">Quick Navigation</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {tiles.map((t) => (
-            <Link
+            <motion.div
               key={t.to}
-              to={t.to}
-              className="group rounded-2xl border border-border bg-card p-4 shadow-soft transition-smooth hover:-translate-y-0.5 hover:shadow-elegant"
+              whileHover={{ y: -3, transition: { duration: 0.2 } }}
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground group-hover:scale-105 transition-transform">
+              <Link
+                to={t.to}
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-primary/40 hover:shadow-elegant"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground group-hover:scale-110 transition-transform duration-300">
                   <t.icon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
                   <div className="font-semibold text-sm truncate">{t.label}</div>
                   <div className="text-xs text-muted-foreground truncate">{t.desc}</div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Quick QR Dialog Modal */}
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
@@ -605,10 +693,10 @@ function DashboardPage() {
           )}
 
           <div className="flex items-center justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopyLink}>
+            <Button variant="outline" size="sm" onClick={handleCopyLink} className="transition-smooth">
               <Copy className="h-4 w-4" /> Copy Link
             </Button>
-            <Button variant="hero" size="sm" onClick={handleDownloadQr}>
+            <Button variant="hero" size="sm" onClick={handleDownloadQr} className="transition-smooth">
               <Download className="h-4 w-4" /> Download
             </Button>
           </div>
@@ -621,6 +709,6 @@ function DashboardPage() {
         forceOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
       />
-    </div>
+    </motion.div>
   );
 }
