@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { DotLottieReact, type DotLottie } from "@lottiefiles/dotlottie-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Marquee } from "@/components/ui/marquee";
 import {
   Zap,
   QrCode,
@@ -52,12 +53,52 @@ function Landing() {
     <div className="min-h-screen bg-background pb-20 sm:pb-0">
       <Header />
       <Hero />
+      <BrandShowcase />
       <Features />
       <HowItWorks />
       <Pricing />
       <Footer />
       <MobileActionBar />
     </div>
+  );
+}
+
+const SHOWCASE_BRANDS = [
+  { name: "LinkedIn", icon: "/brand-icons/linkedin.svg" },
+  { name: "WhatsApp", icon: "/brand-icons/whatsapp.svg" },
+  { name: "GitHub", icon: "/brand-icons/github.svg" },
+  { name: "Instagram", icon: "/brand-icons/instagram.svg" },
+  { name: "Telegram", icon: "/brand-icons/telegram.svg" },
+  { name: "X", icon: "/brand-icons/x.svg" },
+  { name: "YouTube", icon: "/brand-icons/youtube.svg" },
+  { name: "Discord", icon: "/brand-icons/discord.svg" },
+  { name: "Spotify", icon: "/brand-icons/spotify.svg" },
+  { name: "PayPal", icon: "/brand-icons/paypal.svg" },
+  { name: "Stripe", icon: "/brand-icons/stripe.svg" },
+  { name: "bKash", icon: "/brand-icons/bkash.svg" },
+  { name: "Binance", icon: "/brand-icons/binance.svg" },
+];
+
+function BrandShowcase() {
+  return (
+    <section className="border-y border-border/60 bg-card/30 py-6 overflow-hidden">
+      <div className="container mx-auto max-w-6xl px-4 mb-3 text-center">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
+          Seamlessly connect 70+ social, professional & payment channels
+        </p>
+      </div>
+      <Marquee speed={34} pauseOnHover>
+        {SHOWCASE_BRANDS.map((b) => (
+          <div
+            key={b.name}
+            className="flex items-center gap-2.5 rounded-2xl border border-border/60 bg-card/90 px-4 py-2 shadow-soft backdrop-blur hover:border-primary/50 transition-colors"
+          >
+            <img src={b.icon} alt={b.name} className="h-5 w-5 object-contain" />
+            <span className="text-xs font-semibold text-foreground/90">{b.name}</span>
+          </div>
+        ))}
+      </Marquee>
+    </section>
   );
 }
 
@@ -451,11 +492,24 @@ function Footer() {
   return (
     <footer className="border-t border-border bg-card/50">
       <div className="container mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-primary">
-            <CreditCard className="h-4 w-4 text-primary-foreground" />
+        <div className="flex flex-col items-center gap-1 sm:items-start">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-primary">
+              <CreditCard className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span>© 2026 MyTapCard. All rights reserved.</span>
           </div>
-          <span>© 2026 MyTapCard. All rights reserved.</span>
+          <p className="text-xs text-muted-foreground/80 sm:pl-9">
+            Built by{" "}
+            <a
+              href="https://zahidp.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground hover:underline transition-colors"
+            >
+              Zahid
+            </a>
+          </p>
         </div>
         <div className="flex gap-5">
           <Link to="/auth/login">Log in</Link>

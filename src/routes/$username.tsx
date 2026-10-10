@@ -22,6 +22,9 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { TiltCard } from "@/components/cards/tilt-card";
+import { SaveContactActions } from "@/components/cards/save-contact-button";
+import type { VCardContact } from "@/lib/vcard";
 
 export const Route = createFileRoute("/$username")({
   loader: async ({ params }) => {
@@ -607,6 +610,18 @@ function PublicProfile() {
   }
   const ungroupedItems = scopeItems(null);
 
+  const primaryPhone = links.find((l: any) => l.type === "phone")?.value || null;
+  const primaryEmail = links.find((l: any) => l.type === "email")?.value || null;
+  const contactData: VCardContact = {
+    name: profile.display_name || profile.username || "Contact",
+    username: profile.username || undefined,
+    bio: profile.bio || undefined,
+    avatarUrl: profile.avatar_url || undefined,
+    phone: primaryPhone,
+    email: primaryEmail,
+    url: typeof window !== "undefined" ? window.location.href : undefined,
+  };
+
   return (
     <div className={themeClass} style={{ fontFamily: fontStack[fontFamily] ?? fontStack.inter }}>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -618,48 +633,60 @@ function PublicProfile() {
       <div className={`min-h-screen ${bgClass} text-foreground`}>
         <div className="mx-auto max-w-md px-4 pb-10 pt-8">
           {/* Profile card */}
-          <section
-            className={`${cardRadius} bg-card p-6 text-center text-card-foreground shadow-elegant ${proCard}`}
+          <TiltCard
+            className={cardRadius}
             style={isPro ? { animationDelay: "0ms" } : undefined}
           >
-            <div
-              className={`mx-auto mb-4 inline-flex ${avatarRadius} p-1 ${proAvatar}`}
-              style={{ ...accentStyle, color: accent.from }}
+            <section
+              className={`${cardRadius} bg-card p-6 text-center text-card-foreground shadow-elegant ${proCard}`}
             >
-              <Avatar className={`h-24 w-24 ring-4 ring-card ${avatarRadius}`}>
-                <AvatarImage
-                  src={profile.avatar_url ?? undefined}
-                  alt={profile.display_name ?? profile.username ?? ""}
-                  className={avatarRadius}
-                />
-                <AvatarFallback className={`bg-secondary ${avatarRadius}`}>
-                  <UserIcon className="h-8 w-8 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-xl font-bold">{profile.display_name ?? profile.username}</h1>
-              {showVerifiedBadge && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[11px] font-bold text-primary-foreground shadow-soft"
-                  title="Verified"
-                >
-                  <BadgeCheck className="h-3.5 w-3.5" /> Verified
-                </span>
-              )}
-            </div>
-            {profile.username && (
-              <div className="mt-1 text-sm font-medium text-muted-foreground">
-                @{profile.username}
+              <div
+                className={`mx-auto mb-4 inline-flex ${avatarRadius} p-1 ${proAvatar}`}
+                style={{ ...accentStyle, color: accent.from }}
+              >
+                <Avatar className={`h-24 w-24 ring-4 ring-card ${avatarRadius}`}>
+                  <AvatarImage
+                    src={profile.avatar_url ?? undefined}
+                    alt={profile.display_name ?? profile.username ?? ""}
+                    className={avatarRadius}
+                  />
+                  <AvatarFallback className={`bg-secondary ${avatarRadius}`}>
+                    <UserIcon className="h-8 w-8 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
               </div>
-            )}
-            {profile.bio && (
-              <FormattedBio
-                value={profile.bio}
-                className="mt-2 space-y-2 text-sm text-muted-foreground"
+              <div className="flex items-center justify-center gap-2">
+                <h1 className="text-xl font-bold">{profile.display_name ?? profile.username}</h1>
+                {showVerifiedBadge && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[11px] font-bold text-primary-foreground shadow-soft"
+                    title="Verified"
+                  >
+                    <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                  </span>
+                )}
+              </div>
+              {profile.username && (
+                <div className="mt-1 text-sm font-medium text-muted-foreground">
+                  @{profile.username}
+                </div>
+              )}
+              {profile.bio && (
+                <FormattedBio
+                  value={profile.bio}
+                  className="mt-2 space-y-2 text-sm text-muted-foreground"
+                />
+              )}
+
+              {/* 1-Tap Save Contact (vCard) & Native Share */}
+              <SaveContactActions
+                contact={contactData}
+                accentStyle={accentStyle}
+                btnRadius={btnRadius}
+                className="mt-5 pt-1"
               />
-            )}
-          </section>
+            </section>
+          </TiltCard>
 
           {/* CTA */}
           {ctaEnabled && ctaHref && (

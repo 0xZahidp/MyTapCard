@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
+import { PhoneMockup } from "@/components/ui/phone-mockup";
 
 export const Route = createFileRoute("/_authenticated/preview")({
   head: () => ({ meta: [{ title: "Preview — MyTapCard" }] }),
@@ -41,8 +42,8 @@ function PreviewPage() {
           </a>
         </Button>
       </header>
-      <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-elegant">
-        <iframe title="Profile preview" src={url} className="h-[80vh] w-full" />
+      <div className="flex justify-center py-4 bg-secondary/30 rounded-3xl border border-border">
+        <PhoneMockup src={url} />
       </div>
     </div>
   );
