@@ -70,7 +70,7 @@ function SharePage() {
         .maybeSingle(),
       supabase
         .from("links")
-        .select("type, value")
+        .select("type, value, platform")
         .eq("user_id", user.id)
         .in("type", ["phone", "email", "custom", "social"])
         .eq("hidden", false)
@@ -84,7 +84,14 @@ function SharePage() {
       setVisibility((d?.share_visibility as Visibility) ?? "both");
 
       const links = linksRes.data || [];
-      const phoneLink = links.find((l) => l.type === "phone")?.value || null;
+      const phoneLink =
+        links.find((l) => l.type === "phone")?.value ||
+        links.find(
+          (l) =>
+            l.type === "social" &&
+            (l.platform === "whatsapp" || l.platform === "signal" || l.platform === "viber"),
+        )?.value ||
+        null;
       const emailLink = links.find((l) => l.type === "email")?.value || user.email || null;
       const webLink =
         links.find((l) => l.type === "custom" || l.type === "social")?.value || null;
@@ -398,6 +405,8 @@ Prepared for ${displayName ?? username} — ${new Date().toLocaleDateString()}
               email={email}
               website={website}
               shareUrl={shareUrl}
+              userId={user?.id}
+              onPhoneUpdate={(newPhone) => setPhone(newPhone)}
             />
           )}
 

@@ -22,13 +22,25 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-export type CardThemeId = "midnight" | "royal" | "minimal" | "emerald";
+export type CardThemeId =
+  | "midnight"
+  | "royal"
+  | "minimal"
+  | "emerald"
+  | "crimson"
+  | "amethyst"
+  | "sunset"
+  | "nordic"
+  | "monochrome"
+  | "sandstone";
 
 export interface CardTheme {
   id: CardThemeId;
   name: string;
   desc: string;
+  category: "dark" | "light" | "vibrant";
   // CSS preview colors
   frontBg: string;
   frontText: string;
@@ -58,6 +70,7 @@ export const CARD_THEMES: Record<CardThemeId, CardTheme> = {
     id: "midnight",
     name: "Midnight Stealth",
     desc: "Matte obsidian with electric cyan accents",
+    category: "dark",
     frontBg: "linear-gradient(135deg, #090d16 0%, #0f172a 50%, #020617 100%)",
     frontText: "#ffffff",
     frontSubtext: "#94a3b8",
@@ -81,6 +94,7 @@ export const CARD_THEMES: Record<CardThemeId, CardTheme> = {
     id: "royal",
     name: "Royal Gold Luxe",
     desc: "Executive charcoal with champagne gold foil",
+    category: "dark",
     frontBg: "linear-gradient(135deg, #18181b 0%, #1c1917 50%, #09090b 100%)",
     frontText: "#fef08a",
     frontSubtext: "#d6d3d1",
@@ -104,6 +118,7 @@ export const CARD_THEMES: Record<CardThemeId, CardTheme> = {
     id: "minimal",
     name: "Porcelain Minimal",
     desc: "Crisp architectural white & deep graphite",
+    category: "light",
     frontBg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
     frontText: "#0f172a",
     frontSubtext: "#64748b",
@@ -128,6 +143,7 @@ export const CARD_THEMES: Record<CardThemeId, CardTheme> = {
     id: "emerald",
     name: "Emerald Cyber",
     desc: "Nocturnal pine & vivid neon mint glow",
+    category: "vibrant",
     frontBg: "linear-gradient(135deg, #022c22 0%, #064e3b 50%, #021f18 100%)",
     frontText: "#ecfdf5",
     frontSubtext: "#a7f3d0",
@@ -147,6 +163,151 @@ export const CARD_THEMES: Record<CardThemeId, CardTheme> = {
     pdfBackText: [236, 253, 245],
     previewBorder: "border-emerald-500/40 shadow-emerald-500/10",
   },
+  crimson: {
+    id: "crimson",
+    name: "Crimson Velocity",
+    desc: "Deep ruby noir with metallic rose-gold",
+    category: "dark",
+    frontBg: "linear-gradient(135deg, #1c050a 0%, #350a14 50%, #100206 100%)",
+    frontText: "#fff1f2",
+    frontSubtext: "#fecdd3",
+    accent: "#f43f5e",
+    chipBg: "linear-gradient(135deg, #9f1239, #4c0519)",
+    chipBorder: "#f43f5e",
+    chipLines: "#fda4af",
+    backBg: "linear-gradient(135deg, #100206 0%, #2e0813 100%)",
+    backText: "#fff1f2",
+    pdfBg: [28, 5, 10],
+    pdfText: [255, 241, 242],
+    pdfSubtext: [254, 205, 211],
+    pdfAccent: [244, 63, 94],
+    pdfChipBg: [159, 18, 57],
+    pdfChipBorder: [244, 63, 94],
+    pdfBackBg: [16, 2, 6],
+    pdfBackText: [255, 241, 242],
+    previewBorder: "border-rose-500/40 shadow-rose-500/10",
+  },
+  amethyst: {
+    id: "amethyst",
+    name: "Cosmic Amethyst",
+    desc: "Deep velvet violet with luminous lilac",
+    category: "vibrant",
+    frontBg: "linear-gradient(135deg, #120724 0%, #240e3f 50%, #0a0314 100%)",
+    frontText: "#faf5ff",
+    frontSubtext: "#e9d5ff",
+    accent: "#c084fc",
+    chipBg: "linear-gradient(135deg, #7e22ce, #3b0764)",
+    chipBorder: "#a855f7",
+    chipLines: "#d8b4fe",
+    backBg: "linear-gradient(135deg, #0a0314 0%, #240e3f 100%)",
+    backText: "#faf5ff",
+    pdfBg: [18, 7, 36],
+    pdfText: [250, 245, 255],
+    pdfSubtext: [233, 213, 255],
+    pdfAccent: [192, 132, 252],
+    pdfChipBg: [126, 34, 206],
+    pdfChipBorder: [168, 85, 247],
+    pdfBackBg: [10, 3, 20],
+    pdfBackText: [250, 245, 255],
+    previewBorder: "border-purple-500/40 shadow-purple-500/10",
+  },
+  sunset: {
+    id: "sunset",
+    name: "Sunset Bronze",
+    desc: "Executive copper & warm sunset bronze",
+    category: "dark",
+    frontBg: "linear-gradient(135deg, #1c0e09 0%, #341810 50%, #110603 100%)",
+    frontText: "#fff7ed",
+    frontSubtext: "#fed7aa",
+    accent: "#fb923c",
+    chipBg: "linear-gradient(135deg, #9a3412, #431407)",
+    chipBorder: "#ea580c",
+    chipLines: "#fdba74",
+    backBg: "linear-gradient(135deg, #110603 0%, #341810 100%)",
+    backText: "#fff7ed",
+    pdfBg: [28, 14, 9],
+    pdfText: [255, 247, 237],
+    pdfSubtext: [254, 215, 170],
+    pdfAccent: [251, 146, 60],
+    pdfChipBg: [154, 52, 18],
+    pdfChipBorder: [234, 88, 12],
+    pdfBackBg: [17, 6, 3],
+    pdfBackText: [255, 247, 237],
+    previewBorder: "border-orange-500/40 shadow-orange-500/10",
+  },
+  nordic: {
+    id: "nordic",
+    name: "Nordic Glacier",
+    desc: "Arctic deep marine with icy cyan",
+    category: "dark",
+    frontBg: "linear-gradient(135deg, #041a24 0%, #073142 50%, #021118 100%)",
+    frontText: "#ecfeff",
+    frontSubtext: "#a5f3fc",
+    accent: "#22d3ee",
+    chipBg: "linear-gradient(135deg, #0e7490, #155e75)",
+    chipBorder: "#06b6d4",
+    chipLines: "#67e8f9",
+    backBg: "linear-gradient(135deg, #021118 0%, #073142 100%)",
+    backText: "#ecfeff",
+    pdfBg: [4, 26, 36],
+    pdfText: [236, 254, 255],
+    pdfSubtext: [165, 243, 252],
+    pdfAccent: [34, 211, 238],
+    pdfChipBg: [14, 116, 144],
+    pdfChipBorder: [6, 182, 212],
+    pdfBackBg: [2, 17, 24],
+    pdfBackText: [236, 254, 255],
+    previewBorder: "border-cyan-500/40 shadow-cyan-500/10",
+  },
+  monochrome: {
+    id: "monochrome",
+    name: "Titanium Monolith",
+    desc: "High-contrast matte carbon & silver platinum",
+    category: "dark",
+    frontBg: "linear-gradient(135deg, #121214 0%, #202024 50%, #0b0b0d 100%)",
+    frontText: "#ffffff",
+    frontSubtext: "#a1a1aa",
+    accent: "#e4e4e7",
+    chipBg: "linear-gradient(135deg, #3f3f46, #27272a)",
+    chipBorder: "#71717a",
+    chipLines: "#a1a1aa",
+    backBg: "linear-gradient(135deg, #0b0b0d 0%, #202024 100%)",
+    backText: "#ffffff",
+    pdfBg: [18, 18, 20],
+    pdfText: [255, 255, 255],
+    pdfSubtext: [161, 161, 170],
+    pdfAccent: [228, 228, 231],
+    pdfChipBg: [63, 63, 70],
+    pdfChipBorder: [113, 113, 122],
+    pdfBackBg: [11, 11, 13],
+    pdfBackText: [255, 255, 255],
+    previewBorder: "border-zinc-400/40 shadow-zinc-400/10",
+  },
+  sandstone: {
+    id: "sandstone",
+    name: "Artisan Sandstone",
+    desc: "Warm heritage ivory, espresso & terracotta",
+    category: "light",
+    frontBg: "linear-gradient(135deg, #fdfbf7 0%, #f5efe6 50%, #ece2d0 100%)",
+    frontText: "#291809",
+    frontSubtext: "#78593a",
+    accent: "#c2410c",
+    chipBg: "linear-gradient(135deg, #d6c7b2, #b8a389)",
+    chipBorder: "#8c7355",
+    chipLines: "#5c4731",
+    backBg: "linear-gradient(135deg, #f5efe6 0%, #ece2d0 100%)",
+    backText: "#291809",
+    pdfBg: [253, 251, 247],
+    pdfText: [41, 24, 9],
+    pdfSubtext: [120, 89, 58],
+    pdfAccent: [194, 65, 12],
+    pdfCardBorder: [214, 199, 178],
+    pdfChipBg: [214, 199, 178],
+    pdfChipBorder: [140, 115, 85],
+    pdfBackBg: [245, 239, 230],
+    pdfBackText: [41, 24, 9],
+    previewBorder: "border-amber-300 shadow-amber-200/30",
+  },
 };
 
 interface BusinessCardStudioProps {
@@ -157,6 +318,8 @@ interface BusinessCardStudioProps {
   email?: string | null;
   website?: string | null;
   shareUrl: string;
+  userId?: string;
+  onPhoneUpdate?: (phone: string) => void;
 }
 
 export function BusinessCardStudio({
@@ -167,24 +330,72 @@ export function BusinessCardStudio({
   email: initialEmail,
   website: initialWebsite,
   shareUrl,
+  userId,
+  onPhoneUpdate,
 }: BusinessCardStudioProps) {
   const [themeId, setThemeId] = useState<CardThemeId>("midnight");
+  const [themeCategory, setThemeCategory] = useState<"all" | "dark" | "light" | "vibrant">("all");
   const [isFlipped, setIsFlipped] = useState(false);
-  const [showPhone, setShowPhone] = useState(true);
+  const [showPhone, setShowPhone] = useState(Boolean(initialPhone?.trim()));
   const [showEmail, setShowEmail] = useState(true);
   const [showWebsite, setShowWebsite] = useState(true);
   const [showNfcLogo, setShowNfcLogo] = useState(true);
+  const [savingPhone, setSavingPhone] = useState(false);
 
   // Editable details for card preview & export
   const [name, setName] = useState(displayName || username || "Your Name");
   const [title, setTitle] = useState(
     bio && bio.length < 50 ? bio : "Digital Identity & Contact Card"
   );
-  const [phone, setPhone] = useState(initialPhone || "+880 1712-345678");
-  const [email, setEmail] = useState(initialEmail || `${username}@mytapcard.online`);
+  // Phone starts from initialPhone without falling back to any fake dummy number!
+  const [phone, setPhone] = useState(initialPhone?.trim() || "");
+  const [email, setEmail] = useState(initialEmail || (username ? `${username}@mytapcard.online` : ""));
   const [website, setWebsite] = useState(
-    initialWebsite || `mytapcard.online/${username}`
+    initialWebsite || (username ? `mytapcard.online/${username}` : "mytapcard.online")
   );
+
+  useEffect(() => {
+    if (initialPhone !== undefined) {
+      const val = initialPhone?.trim() || "";
+      setPhone(val);
+      setShowPhone(Boolean(val));
+    }
+  }, [initialPhone]);
+
+  async function savePhoneToAccount() {
+    if (!userId || !phone.trim()) return;
+    setSavingPhone(true);
+    try {
+      const { data: existingLink } = await supabase
+        .from("links")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("type", "phone")
+        .maybeSingle();
+
+      if (existingLink) {
+        await supabase
+          .from("links")
+          .update({ value: phone.trim() })
+          .eq("id", existingLink.id);
+      } else {
+        await supabase.from("links").insert({
+          user_id: userId,
+          type: "phone",
+          label: "Phone",
+          value: phone.trim(),
+          position: 0,
+        });
+      }
+      setShowPhone(true);
+      onPhoneUpdate?.(phone.trim());
+      toast.success("Phone number saved to your account!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save phone number");
+    } finally {
+      setSavingPhone(false);
+    }
+  }
 
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [isExporting, setIsExporting] = useState(false);
@@ -380,16 +591,16 @@ export function BusinessCardStudio({
     pdf.setTextColor(t.pdfSubtext[0], t.pdfSubtext[1], t.pdfSubtext[2]);
 
     let contactY = y + 36;
-    if (showPhone && phone) {
-      pdf.text(`Ph: ${phone}`, x + 7, contactY);
+    if (showPhone && phone && phone.trim()) {
+      pdf.text(`Ph: ${phone.trim()}`, x + 7, contactY);
       contactY += 4;
     }
-    if (showEmail && email) {
-      pdf.text(`Em: ${email}`, x + 7, contactY, { maxWidth: w - 14 });
+    if (showEmail && email && email.trim()) {
+      pdf.text(`Em: ${email.trim()}`, x + 7, contactY, { maxWidth: w - 14 });
       contactY += 4;
     }
-    if (showWebsite && website) {
-      pdf.text(`Web: ${website}`, x + 7, contactY, { maxWidth: w - 14 });
+    if (showWebsite && website && website.trim()) {
+      pdf.text(`Web: ${website.trim()}`, x + 7, contactY, { maxWidth: w - 14 });
     }
 
     // Brand mark bottom right
@@ -514,16 +725,16 @@ export function BusinessCardStudio({
         ctx.fillStyle = rgbToHex(theme.pdfSubtext);
         ctx.font = "400 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         let cY = 430;
-        if (showPhone && phone) {
-          ctx.fillText(`Ph: ${phone}`, 80, cY);
+        if (showPhone && phone && phone.trim()) {
+          ctx.fillText(`Ph: ${phone.trim()}`, 80, cY);
           cY += 45;
         }
-        if (showEmail && email) {
-          ctx.fillText(`Em: ${email}`, 80, cY);
+        if (showEmail && email && email.trim()) {
+          ctx.fillText(`Em: ${email.trim()}`, 80, cY);
           cY += 45;
         }
-        if (showWebsite && website) {
-          ctx.fillText(`Web: ${website}`, 80, cY);
+        if (showWebsite && website && website.trim()) {
+          ctx.fillText(`Web: ${website.trim()}`, 80, cY);
         }
 
         ctx.font = "600 26px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -706,24 +917,24 @@ export function BusinessCardStudio({
                     style={{ color: theme.frontSubtext }}
                     className="space-y-0.5 leading-tight"
                   >
-                    {showPhone && phone && (
+                    {showPhone && phone && phone.trim() ? (
                       <div className="flex items-center gap-1.5">
                         <Phone className="h-3 w-3 shrink-0" />
-                        <span>{phone}</span>
+                        <span>{phone.trim()}</span>
                       </div>
-                    )}
-                    {showEmail && email && (
+                    ) : null}
+                    {showEmail && email && email.trim() ? (
                       <div className="flex items-center gap-1.5">
                         <Mail className="h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[200px]">{email}</span>
+                        <span className="truncate max-w-[200px]">{email.trim()}</span>
                       </div>
-                    )}
-                    {showWebsite && website && (
+                    ) : null}
+                    {showWebsite && website && website.trim() ? (
                       <div className="flex items-center gap-1.5">
                         <Globe className="h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[200px]">{website}</span>
+                        <span className="truncate max-w-[200px]">{website.trim()}</span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   <span
@@ -795,44 +1006,95 @@ export function BusinessCardStudio({
         <div className="space-y-6 lg:col-span-5">
           {/* Themes Selector */}
           <div>
-            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Palette className="h-3.5 w-3.5 text-primary" /> Select Card Theme
-            </label>
-            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-              {(Object.keys(CARD_THEMES) as CardThemeId[]).map((tid) => {
-                const t = CARD_THEMES[tid];
-                const active = themeId === tid;
-                return (
-                  <button
-                    key={tid}
-                    type="button"
-                    onClick={() => setThemeId(tid)}
-                    className={`flex flex-col gap-1 rounded-2xl border-2 p-3 text-left transition-all ${
-                      active
-                        ? "border-primary bg-primary/10 shadow-soft"
-                        : "border-border/80 bg-card hover:border-primary/40"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold">{t.name}</span>
-                      {active && <Check className="h-3.5 w-3.5 text-primary" />}
-                    </div>
-                    <span className="text-[0.68rem] text-muted-foreground leading-tight">
-                      {t.desc}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <Palette className="h-3.5 w-3.5 text-primary" /> Select Card Design
+              </label>
+              <span className="text-[0.68rem] text-muted-foreground font-medium">
+                10 Premium Styles
+              </span>
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {[
+                { id: "all", label: "All (10)" },
+                { id: "dark", label: "Dark Luxe (6)" },
+                { id: "light", label: "Light & Craft (2)" },
+                { id: "vibrant", label: "Vibrant & Cyber (2)" },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setThemeCategory(cat.id as any)}
+                  className={`rounded-full px-2.5 py-0.5 text-[0.68rem] font-semibold transition-all ${
+                    themeCategory === cat.id
+                      ? "bg-primary text-primary-foreground shadow-soft"
+                      : "bg-secondary/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Theme Grid */}
+            <div className="mt-2.5 grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
+              {(Object.keys(CARD_THEMES) as CardThemeId[])
+                .filter((tid) => {
+                  if (themeCategory === "all") return true;
+                  return CARD_THEMES[tid].category === themeCategory;
+                })
+                .map((tid) => {
+                  const t = CARD_THEMES[tid];
+                  const active = themeId === tid;
+                  return (
+                    <button
+                      key={tid}
+                      type="button"
+                      onClick={() => setThemeId(tid)}
+                      className={`flex items-start gap-2 rounded-xl border p-2 text-left transition-all ${
+                        active
+                          ? "border-primary bg-primary/10 shadow-soft ring-1 ring-primary/30"
+                          : "border-border/80 bg-card hover:border-primary/40 hover:bg-secondary/20"
+                      }`}
+                    >
+                      {/* Mini preview swatch */}
+                      <div
+                        style={{ background: t.frontBg }}
+                        className="relative h-9 w-12 shrink-0 rounded-md border border-white/20 shadow-inner flex items-center justify-between px-1"
+                      >
+                        <div
+                          style={{ background: t.chipBg, borderColor: t.chipBorder }}
+                          className="h-3 w-4 rounded-[2px] border"
+                        />
+                        <div
+                          style={{ background: t.accent }}
+                          className="h-1.5 w-1.5 rounded-full shadow-sm"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="truncate text-xs font-bold">{t.name}</span>
+                          {active && <Check className="h-3 w-3 shrink-0 text-primary ml-1" />}
+                        </div>
+                        <span className="block truncate text-[0.65rem] text-muted-foreground">
+                          {t.desc}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
           </div>
 
           {/* Quick Details Editor */}
-          <div className="rounded-2xl border border-border/70 bg-card/60 p-4 space-y-3">
+          <div className="rounded-2xl border border-border/70 bg-card/60 p-4 space-y-3 shadow-soft">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Sliders className="h-3.5 w-3.5 text-primary" /> Card Details
+                <Sliders className="h-3.5 w-3.5 text-primary" /> Card Details &amp; Contacts
               </span>
-              <span className="text-[0.68rem] text-muted-foreground">Live preview</span>
+              <span className="text-[0.68rem] text-muted-foreground">Live real-time preview</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -854,36 +1116,100 @@ export function BusinessCardStudio({
                   className="mt-1 w-full rounded-xl border border-border bg-background px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
+
+              {/* Dedicated Phone Input */}
+              <div className="col-span-2 space-y-1 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[0.68rem] font-medium text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3 text-primary" /> Phone Number
+                    {!phone.trim() ? (
+                      <span className="text-[0.65rem] text-amber-500 font-semibold">
+                        (Disabled on card — enter number to enable)
+                      </span>
+                    ) : (
+                      <span className="text-[0.65rem] text-emerald-600 dark:text-emerald-400 font-semibold">
+                        (Active on card)
+                      </span>
+                    )}
+                  </label>
+                  {phone.trim() && userId && (
+                    <button
+                      type="button"
+                      onClick={savePhoneToAccount}
+                      disabled={savingPhone || phone === initialPhone}
+                      className="text-[0.68rem] text-primary hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {savingPhone ? "Saving…" : phone === initialPhone ? "✓ Saved in account" : "Save to account"}
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="tel"
+                  placeholder="e.g. +880 1712-345678"
+                  value={phone}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPhone(val);
+                    if (val.trim() && !showPhone) setShowPhone(true);
+                    if (!val.trim()) setShowPhone(false);
+                  }}
+                  className="w-full rounded-xl border border-border bg-background px-2.5 py-1.5 text-xs font-mono font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <p className="text-[0.65rem] text-muted-foreground">
+                  {phone.trim()
+                    ? "Displays on your card and print PDF. Toggle off below if you wish to hide it."
+                    : "No phone number configured. Enter a number here or configure it in Profile settings."}
+                </p>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1 text-xs">
-              <label className="flex items-center gap-1.5 cursor-pointer">
+            {/* Display Toggles */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-xs border-t border-border/40">
+              <label
+                className={`flex items-center gap-1.5 ${
+                  !phone.trim() ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
+                title={!phone.trim() ? "Enter a phone number above to enable this option" : undefined}
+              >
                 <input
                   type="checkbox"
-                  checked={showPhone}
+                  disabled={!phone.trim()}
+                  checked={showPhone && !!phone.trim()}
                   onChange={(e) => setShowPhone(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary"
+                  className="rounded border-border text-primary focus:ring-primary disabled:opacity-50"
                 />
-                <span className="text-[0.72rem] text-muted-foreground">Phone</span>
+                <span className="text-[0.72rem] text-muted-foreground flex items-center gap-1">
+                  Phone
+                  {!phone.trim() && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[0.6rem] font-semibold text-muted-foreground">
+                      Disabled
+                    </span>
+                  )}
+                </span>
               </label>
+
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={showEmail}
+                  checked={showEmail && !!email.trim()}
+                  disabled={!email.trim()}
                   onChange={(e) => setShowEmail(e.target.checked)}
                   className="rounded border-border text-primary focus:ring-primary"
                 />
                 <span className="text-[0.72rem] text-muted-foreground">Email</span>
               </label>
+
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={showWebsite}
+                  checked={showWebsite && !!website.trim()}
+                  disabled={!website.trim()}
                   onChange={(e) => setShowWebsite(e.target.checked)}
                   className="rounded border-border text-primary focus:ring-primary"
                 />
                 <span className="text-[0.72rem] text-muted-foreground">Website</span>
               </label>
+
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"

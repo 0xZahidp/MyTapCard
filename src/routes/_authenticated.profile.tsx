@@ -28,9 +28,17 @@ import {
   Trash2,
   User as UserIcon,
   Upload,
+  Phone,
 } from "lucide-react";
 import { compressImage } from "@/lib/image";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — MyTapCard" }] }),
@@ -38,6 +46,20 @@ export const Route = createFileRoute("/_authenticated/profile")({
 });
 
 const USERNAME_RE = /^[a-zA-Z0-9_]+$/;
+
+const PHONE_COUNTRIES = [
+  { code: "+880", label: "BD +880" },
+  { code: "+1", label: "US/CA +1" },
+  { code: "+44", label: "UK +44" },
+  { code: "+971", label: "UAE +971" },
+  { code: "+966", label: "SA +966" },
+  { code: "+60", label: "MY +60" },
+  { code: "+65", label: "SG +65" },
+  { code: "+91", label: "IN +91" },
+  { code: "+92", label: "PK +92" },
+  { code: "+61", label: "AU +61" },
+  { code: "+49", label: "DE +49" },
+];
 
 interface Profile {
   id: string;
@@ -57,6 +79,11 @@ function ProfilePage() {
   const { isPro, isTrial, loading: proLoading } = useProStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
+  const [phone, setPhone] = useState<string>("");
+  const [savedPhone, setSavedPhone] = useState<string>("");
+  const [phoneLinkId, setPhoneLinkId] = useState<string | null>(null);
+  const [phoneCountry, setPhoneCountry] = useState<string>("+880");
+  const [localPhoneNumber, setLocalPhoneNumber] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [savingUsername, setSavingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -69,21 +96,43 @@ function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const nextProfile = data as Profile;
-        setProfile(nextProfile);
-        setSavedProfile(nextProfile);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("links")
+        .select("id, value")
+        .eq("user_id", user.id)
+        .eq("type", "phone")
+        .maybeSingle(),
+    ]).then(([profileRes, linkRes]) => {
+      const nextProfile = profileRes.data as Profile;
+      setProfile(nextProfile);
+      setSavedProfile(nextProfile);
+      if (linkRes.data?.value) {
+        const val = linkRes.data.value;
+        setPhone(val);
+        setSavedPhone(val);
+        setPhoneLinkId(linkRes.data.id);
+        const match = PHONE_COUNTRIES.find((c) => val.startsWith(c.code));
+        if (match) {
+          setPhoneCountry(match.code);
+          setLocalPhoneNumber(val.slice(match.code.length).trim());
+        } else {
+          setLocalPhoneNumber(val);
+        }
+      }
+      setLoading(false);
+    });
   }, [user]);
 
+  const phoneDirty = phone !== savedPhone;
   const hasUnsavedChanges =
-    !!profile && !!savedProfile && JSON.stringify(profile) !== JSON.stringify(savedProfile);
+    (!!profile && !!savedProfile && JSON.stringify(profile) !== JSON.stringify(savedProfile)) ||
+    phoneDirty;
   const usernameDirty = profile?.username !== savedProfile?.username;
   const usernameError = getUsernameError(profile?.username ?? "", isPro);
 
@@ -120,6 +169,33 @@ function ProfilePage() {
         cta_url: profile.cta_url,
       } as any)
       .eq("id", user.id);
+
+    // Sync phone link to links table
+    if (phoneDirty) {
+      if (phone.trim()) {
+        if (phoneLinkId) {
+          await supabase.from("links").update({ value: phone.trim() }).eq("id", phoneLinkId);
+        } else {
+          const { data: newLink } = await supabase
+            .from("links")
+            .insert({
+              user_id: user.id,
+              type: "phone",
+              label: "Phone",
+              value: phone.trim(),
+              position: 0,
+            })
+            .select("id")
+            .single();
+          if (newLink) setPhoneLinkId(newLink.id);
+        }
+      } else if (phoneLinkId) {
+        await supabase.from("links").delete().eq("id", phoneLinkId);
+        setPhoneLinkId(null);
+      }
+      setSavedPhone(phone);
+    }
+
     setSaving(false);
     if (error) {
       toast.error(getProfileSaveError(error));
@@ -421,6 +497,65 @@ function ProfilePage() {
               onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
             />
           </div>
+        </div>
+
+        {/* Primary Phone Number Section */}
+        <div className="mt-4 rounded-2xl border border-border/80 bg-secondary/20 p-4 shadow-soft">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="profile-phone" className="flex items-center gap-2 text-sm font-semibold">
+                <Phone className="h-4 w-4 text-primary" /> Primary Phone Number
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Powers your digital business card, NFC tap, and 1-tap contact save (.vcf).
+                {phone.trim() ? " Leave empty to disable phone sharing." : " Currently empty (disabled on card & share)."}
+              </p>
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto sm:min-w-[320px]">
+              <Select
+                value={phoneCountry}
+                onValueChange={(val) => {
+                  setPhoneCountry(val);
+                  const combined = localPhoneNumber.trim() ? `${val} ${localPhoneNumber.trim()}` : "";
+                  setPhone(combined);
+                }}
+              >
+                <SelectTrigger className="w-[115px] shrink-0 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PHONE_COUNTRIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code} className="text-xs">
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                id="profile-phone"
+                type="tel"
+                placeholder="1712-345678"
+                value={localPhoneNumber}
+                onChange={(e) => {
+                  const cleaned = e.target.value;
+                  setLocalPhoneNumber(cleaned);
+                  const combined = cleaned.trim() ? `${phoneCountry} ${cleaned.trim()}` : "";
+                  setPhone(combined);
+                }}
+                className="flex-1 font-mono text-sm"
+              />
+            </div>
+          </div>
+          {phone.trim() ? (
+            <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Active on your smart card as: <span className="font-mono font-semibold">{phone}</span>
+            </div>
+          ) : (
+            <div className="mt-2 text-xs text-muted-foreground/80 italic">
+              Phone option in your Share &amp; Card sections is currently disabled.
+            </div>
+          )}
         </div>
         <div className="mt-4 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
