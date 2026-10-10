@@ -334,7 +334,6 @@ export function BusinessCardStudio({
   onPhoneUpdate,
 }: BusinessCardStudioProps) {
   const [themeId, setThemeId] = useState<CardThemeId>("midnight");
-  const [themeCategory, setThemeCategory] = useState<"all" | "dark" | "light" | "vibrant">("all");
   const [isFlipped, setIsFlipped] = useState(false);
   const [showPhone, setShowPhone] = useState(Boolean(initialPhone?.trim()));
   const [showEmail, setShowEmail] = useState(true);
@@ -815,17 +814,14 @@ export function BusinessCardStudio({
   return (
     <section className="overflow-hidden rounded-3xl border border-border/70 bg-card p-6 shadow-elegant sm:p-8">
       {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between border-b border-border/50 pb-4">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            <CreditCard className="h-3.5 w-3.5" />
-            Print-Ready Business Card Studio
-          </div>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight">
-            Design &amp; Print Your Smart NFC Card
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            <CreditCard className="h-5 w-5 text-primary" />
+            Smart Business Card
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Standard CR80 size (85.6 × 54 mm). Double-sided vector PDF, printable A4 sheets, and 300 DPI assets.
+          <p className="text-xs text-muted-foreground">
+            CR80 standard (85.6 × 54 mm) · Double-sided print &amp; NFC
           </p>
         </div>
 
@@ -834,20 +830,20 @@ export function BusinessCardStudio({
           variant="outline"
           size="sm"
           onClick={() => setIsFlipped(!isFlipped)}
-          className="self-start gap-2 shadow-soft sm:self-auto"
+          className="gap-1.5 text-xs font-medium shadow-soft"
         >
-          <RotateCw className="h-4 w-4" />
-          Flip to {isFlipped ? "Front" : "Back"}
+          <RotateCw className="h-3.5 w-3.5" />
+          Flip {isFlipped ? "Front" : "Back"}
         </Button>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-12 lg:items-center">
+      <div className="mt-6 grid gap-8 lg:grid-cols-12 lg:items-start">
         {/* LEFT / CENTER: Interactive 3D Card Preview */}
         <div className="flex flex-col items-center justify-center lg:col-span-7">
           <div
             className="perspective-[1000px] cursor-pointer"
             onClick={() => setIsFlipped(!isFlipped)}
-            title="Click card to flip between front and back"
+            title="Click card to flip"
           >
             <motion.div
               animate={{ rotateY: isFlipped ? 180 : 0 }}
@@ -920,19 +916,19 @@ export function BusinessCardStudio({
                     {showPhone && phone && phone.trim() ? (
                       <div className="flex items-center gap-1.5">
                         <Phone className="h-3 w-3 shrink-0" />
-                        <span>{phone.trim()}</span>
+                        <span className="truncate">{phone.trim()}</span>
                       </div>
                     ) : null}
                     {showEmail && email && email.trim() ? (
                       <div className="flex items-center gap-1.5">
                         <Mail className="h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[200px]">{email.trim()}</span>
+                        <span className="truncate max-w-[190px]">{email.trim()}</span>
                       </div>
                     ) : null}
                     {showWebsite && website && website.trim() ? (
                       <div className="flex items-center gap-1.5">
                         <Globe className="h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[200px]">{website.trim()}</span>
+                        <span className="truncate max-w-[190px]">{website.trim()}</span>
                       </div>
                     ) : null}
                   </div>
@@ -997,155 +993,119 @@ export function BusinessCardStudio({
             </motion.div>
           </div>
 
-          <p className="mt-3 text-xs text-muted-foreground">
-            Viewing: <strong className="text-foreground">{isFlipped ? "Back Side" : "Front Side"}</strong> · Click card or flip button to rotate
+          <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            <strong className="text-foreground">{isFlipped ? "Back Side" : "Front Side"}</strong>
+            <span className="opacity-60">· Click card to flip</span>
           </p>
         </div>
 
         {/* RIGHT: Customization & Export Controls */}
-        <div className="space-y-6 lg:col-span-5">
-          {/* Themes Selector */}
-          <div>
+        <div className="space-y-4 lg:col-span-5">
+          {/* Themes: 10 sleek color swatch pills */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Palette className="h-3.5 w-3.5 text-primary" /> Select Card Design
-              </label>
-              <span className="text-[0.68rem] text-muted-foreground font-medium">
-                10 Premium Styles
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Palette className="h-3.5 w-3.5 text-primary" /> Card Theme
+              </span>
+              <span className="text-xs font-medium text-foreground">
+                {CARD_THEMES[themeId].name}
               </span>
             </div>
 
-            {/* Category Filter Tabs */}
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {[
-                { id: "all", label: "All (10)" },
-                { id: "dark", label: "Dark Luxe (6)" },
-                { id: "light", label: "Light & Craft (2)" },
-                { id: "vibrant", label: "Vibrant & Cyber (2)" },
-              ].map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setThemeCategory(cat.id as any)}
-                  className={`rounded-full px-2.5 py-0.5 text-[0.68rem] font-semibold transition-all ${
-                    themeCategory === cat.id
-                      ? "bg-primary text-primary-foreground shadow-soft"
-                      : "bg-secondary/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Theme Grid */}
-            <div className="mt-2.5 grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-              {(Object.keys(CARD_THEMES) as CardThemeId[])
-                .filter((tid) => {
-                  if (themeCategory === "all") return true;
-                  return CARD_THEMES[tid].category === themeCategory;
-                })
-                .map((tid) => {
-                  const t = CARD_THEMES[tid];
-                  const active = themeId === tid;
-                  return (
-                    <button
-                      key={tid}
-                      type="button"
-                      onClick={() => setThemeId(tid)}
-                      className={`flex items-start gap-2 rounded-xl border p-2 text-left transition-all ${
-                        active
-                          ? "border-primary bg-primary/10 shadow-soft ring-1 ring-primary/30"
-                          : "border-border/80 bg-card hover:border-primary/40 hover:bg-secondary/20"
+            {/* 10 Clean Swatches Grid */}
+            <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-5">
+              {(Object.keys(CARD_THEMES) as CardThemeId[]).map((tid) => {
+                const t = CARD_THEMES[tid];
+                const active = themeId === tid;
+                const short = t.name.split(" ")[0];
+                return (
+                  <button
+                    key={tid}
+                    type="button"
+                    onClick={() => setThemeId(tid)}
+                    title={t.name}
+                    className={`group relative flex flex-col items-center gap-1 rounded-xl p-1.5 transition-all ${
+                      active
+                        ? "bg-primary/10 ring-2 ring-primary shadow-soft"
+                        : "border border-border/60 hover:bg-secondary/40"
+                    }`}
+                  >
+                    {/* Swatch circle */}
+                    <div
+                      style={{ background: t.frontBg }}
+                      className={`relative flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-transform group-hover:scale-105 ${
+                        t.category === "light" ? "border-slate-300" : "border-white/20"
                       }`}
                     >
-                      {/* Mini preview swatch */}
                       <div
-                        style={{ background: t.frontBg }}
-                        className="relative h-9 w-12 shrink-0 rounded-md border border-white/20 shadow-inner flex items-center justify-between px-1"
-                      >
-                        <div
-                          style={{ background: t.chipBg, borderColor: t.chipBorder }}
-                          className="h-3 w-4 rounded-[2px] border"
-                        />
-                        <div
-                          style={{ background: t.accent }}
-                          className="h-1.5 w-1.5 rounded-full shadow-sm"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="truncate text-xs font-bold">{t.name}</span>
-                          {active && <Check className="h-3 w-3 shrink-0 text-primary ml-1" />}
+                        style={{ background: t.accent }}
+                        className="h-2 w-2 rounded-full shadow"
+                      />
+                      {active && (
+                        <div className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+                          <Check className="h-2 w-2 stroke-[3]" />
                         </div>
-                        <span className="block truncate text-[0.65rem] text-muted-foreground">
-                          {t.desc}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                      )}
+                    </div>
+                    <span className="truncate text-[10px] font-medium text-muted-foreground group-hover:text-foreground">
+                      {short}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Quick Details Editor */}
-          <div className="rounded-2xl border border-border/70 bg-card/60 p-4 space-y-3 shadow-soft">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Sliders className="h-3.5 w-3.5 text-primary" /> Card Details &amp; Contacts
+          {/* Quick Details Editor: Clean full-width inputs */}
+          <div className="space-y-3 rounded-2xl border border-border/70 bg-card/60 p-4 shadow-soft">
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Sliders className="h-3.5 w-3.5 text-primary" /> Card Details
               </span>
-              <span className="text-[0.68rem] text-muted-foreground">Live real-time preview</span>
+              <span className="text-[10px] font-normal lowercase">live preview</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="space-y-2.5">
               <div>
-                <label className="text-[0.68rem] font-medium text-muted-foreground">Name</label>
+                <label className="text-[11px] font-medium text-muted-foreground">Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-border bg-background px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
+
               <div>
-                <label className="text-[0.68rem] font-medium text-muted-foreground">Title / Role</label>
+                <label className="text-[11px] font-medium text-muted-foreground">Title / Role</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-border bg-background px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
 
-              {/* Dedicated Phone Input */}
-              <div className="col-span-2 space-y-1 pt-1">
+              <div>
                 <div className="flex items-center justify-between">
-                  <label className="text-[0.68rem] font-medium text-muted-foreground flex items-center gap-1">
+                  <label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
                     <Phone className="h-3 w-3 text-primary" /> Phone Number
-                    {!phone.trim() ? (
-                      <span className="text-[0.65rem] text-amber-500 font-semibold">
-                        (Disabled on card — enter number to enable)
-                      </span>
-                    ) : (
-                      <span className="text-[0.65rem] text-emerald-600 dark:text-emerald-400 font-semibold">
-                        (Active on card)
-                      </span>
-                    )}
                   </label>
                   {phone.trim() && userId && (
                     <button
                       type="button"
                       onClick={savePhoneToAccount}
                       disabled={savingPhone || phone === initialPhone}
-                      className="text-[0.68rem] text-primary hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
+                      className="text-[10px] font-semibold text-primary hover:underline disabled:opacity-50"
                     >
-                      {savingPhone ? "Saving…" : phone === initialPhone ? "✓ Saved in account" : "Save to account"}
+                      {savingPhone ? "Saving…" : phone === initialPhone ? "✓ Synced" : "Save"}
                     </button>
                   )}
                 </div>
                 <input
                   type="tel"
-                  placeholder="e.g. +880 1712-345678"
+                  placeholder="+880 1712-345678"
                   value={phone}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -1153,86 +1113,83 @@ export function BusinessCardStudio({
                     if (val.trim() && !showPhone) setShowPhone(true);
                     if (!val.trim()) setShowPhone(false);
                   }}
-                  className="w-full rounded-xl border border-border bg-background px-2.5 py-1.5 text-xs font-mono font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-                <p className="text-[0.65rem] text-muted-foreground">
-                  {phone.trim()
-                    ? "Displays on your card and print PDF. Toggle off below if you wish to hide it."
-                    : "No phone number configured. Enter a number here or configure it in Profile settings."}
-                </p>
               </div>
             </div>
 
-            {/* Display Toggles */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-xs border-t border-border/40">
-              <label
-                className={`flex items-center gap-1.5 ${
-                  !phone.trim() ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            {/* Display Toggle Pills */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+              <button
+                type="button"
+                disabled={!phone.trim()}
+                onClick={() => setShowPhone(!showPhone)}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${
+                  !phone.trim()
+                    ? "opacity-40 cursor-not-allowed bg-muted text-muted-foreground"
+                    : showPhone
+                      ? "bg-primary/10 text-primary border border-primary/30"
+                      : "bg-background text-muted-foreground border border-border"
                 }`}
-                title={!phone.trim() ? "Enter a phone number above to enable this option" : undefined}
               >
-                <input
-                  type="checkbox"
-                  disabled={!phone.trim()}
-                  checked={showPhone && !!phone.trim()}
-                  onChange={(e) => setShowPhone(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary disabled:opacity-50"
-                />
-                <span className="text-[0.72rem] text-muted-foreground flex items-center gap-1">
-                  Phone
-                  {!phone.trim() && (
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[0.6rem] font-semibold text-muted-foreground">
-                      Disabled
-                    </span>
-                  )}
-                </span>
-              </label>
+                <Phone className="h-3 w-3" />
+                Phone {showPhone && phone.trim() ? "On" : "Off"}
+              </button>
 
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showEmail && !!email.trim()}
-                  disabled={!email.trim()}
-                  onChange={(e) => setShowEmail(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary"
-                />
-                <span className="text-[0.72rem] text-muted-foreground">Email</span>
-              </label>
+              <button
+                type="button"
+                disabled={!email.trim()}
+                onClick={() => setShowEmail(!showEmail)}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${
+                  showEmail && email.trim()
+                    ? "bg-primary/10 text-primary border border-primary/30"
+                    : "bg-background text-muted-foreground border border-border"
+                }`}
+              >
+                <Mail className="h-3 w-3" />
+                Email {showEmail && email.trim() ? "On" : "Off"}
+              </button>
 
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showWebsite && !!website.trim()}
-                  disabled={!website.trim()}
-                  onChange={(e) => setShowWebsite(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary"
-                />
-                <span className="text-[0.72rem] text-muted-foreground">Website</span>
-              </label>
+              <button
+                type="button"
+                disabled={!website.trim()}
+                onClick={() => setShowWebsite(!showWebsite)}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${
+                  showWebsite && website.trim()
+                    ? "bg-primary/10 text-primary border border-primary/30"
+                    : "bg-background text-muted-foreground border border-border"
+                }`}
+              >
+                <Globe className="h-3 w-3" />
+                Web {showWebsite && website.trim() ? "On" : "Off"}
+              </button>
 
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showNfcLogo}
-                  onChange={(e) => setShowNfcLogo(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary"
-                />
-                <span className="text-[0.72rem] text-muted-foreground">NFC Mark</span>
-              </label>
+              <button
+                type="button"
+                onClick={() => setShowNfcLogo(!showNfcLogo)}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors ${
+                  showNfcLogo
+                    ? "bg-primary/10 text-primary border border-primary/30"
+                    : "bg-background text-muted-foreground border border-border"
+                }`}
+              >
+                <Wifi className="h-3 w-3 rotate-90" />
+                NFC {showNfcLogo ? "On" : "Off"}
+              </button>
             </div>
           </div>
 
-          {/* Export Action Buttons */}
-          <div className="space-y-2.5 pt-1">
+          {/* Export Action Buttons: Clean, concise, no overlap */}
+          <div className="space-y-2 pt-1">
             <Button
               variant="hero"
               size="lg"
               onClick={downloadSingleCardPdf}
               disabled={isExporting}
-              className="w-full gap-2 shadow-elegant"
+              className="w-full gap-2 text-sm font-semibold shadow-elegant"
             >
               <Download className="h-4 w-4" />
-              Download Double-Sided PDF (CR80 Print-Ready)
+              Download PDF Card
             </Button>
 
             <div className="grid grid-cols-2 gap-2">
@@ -1241,10 +1198,10 @@ export function BusinessCardStudio({
                 size="sm"
                 onClick={downloadA4SheetPdf}
                 disabled={isExporting}
-                className="gap-1.5"
+                className="gap-1.5 text-xs truncate"
               >
-                <Printer className="h-3.5 w-3.5" />
-                Print A4 Sheet (10 Cards)
+                <Printer className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">Print Sheet (10x)</span>
               </Button>
 
               <Button
@@ -1252,15 +1209,15 @@ export function BusinessCardStudio({
                 size="sm"
                 onClick={() => downloadCardPng(isFlipped ? "back" : "front")}
                 disabled={isExporting}
-                className="gap-1.5"
+                className="gap-1.5 text-xs truncate"
               >
-                <FileCheck className="h-3.5 w-3.5" />
-                Download 300 DPI PNG
+                <FileCheck className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">Save PNG (300 DPI)</span>
               </Button>
             </div>
 
-            <p className="text-[0.7rem] text-muted-foreground text-center">
-              Vector resolution · Standard 85.6 × 54 mm · Ready for Vistaprint, Moo, or local print shops
+            <p className="text-center text-[10px] text-muted-foreground">
+              Vector resolution · Standard 85.6 × 54 mm
             </p>
           </div>
         </div>
