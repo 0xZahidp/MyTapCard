@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies & Build artifacts
 node_modules
 dist
 dist-ssr
@@ -15,9 +16,23 @@ dist-ssr
 .vercel
 .tanstack/**
 .nitro
-*.local
+
+# Environment, secrets & local configs
 .env
 .env.*
+*.local
+*.env
+*.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+credentials.json
+service-account*.json
+
+# SQLite & local databases
+*.sqlite
+*.db
 
 # Supabase CLI local link/cache metadata
 supabase/.temp/
@@ -26,15 +41,14 @@ supabase/.temp/
 .wrangler/
 .dev.vars
 
-# Editor directories and files
+# Editor directories and OS files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-.vercel
