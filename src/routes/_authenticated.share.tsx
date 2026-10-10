@@ -23,6 +23,8 @@ import {
   Printer,
 } from "lucide-react";
 
+import { BusinessCardStudio } from "@/components/cards/business-card-studio";
+
 type CardSize = "business" | "standard" | "large";
 const CARD_SIZES: Record<
   CardSize,
@@ -49,6 +51,10 @@ function SharePage() {
   const { user } = useAuth();
   const [username, setUsername] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [bio, setBio] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [website, setWebsite] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<Visibility>("both");
   const [qr, setQr] = useState<string>("");
   const [cardSize, setCardSize] = useState<CardSize>("business");
@@ -56,18 +62,37 @@ function SharePage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("username, display_name, share_visibility" as any)
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const d = data as any;
-        setUsername(d?.username ?? null);
-        setDisplayName(d?.display_name ?? null);
-        setVisibility((d?.share_visibility as Visibility) ?? "both");
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from("profiles")
+        .select("username, display_name, bio, share_visibility" as any)
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("links")
+        .select("type, value")
+        .eq("user_id", user.id)
+        .in("type", ["phone", "email", "custom", "social"])
+        .eq("hidden", false)
+        .order("position")
+        .limit(10),
+    ]).then(([profileRes, linksRes]) => {
+      const d = profileRes.data as any;
+      setUsername(d?.username ?? null);
+      setDisplayName(d?.display_name ?? null);
+      setBio(d?.bio ?? null);
+      setVisibility((d?.share_visibility as Visibility) ?? "both");
+
+      const links = linksRes.data || [];
+      const phoneLink = links.find((l) => l.type === "phone")?.value || null;
+      const emailLink = links.find((l) => l.type === "email")?.value || user.email || null;
+      const webLink =
+        links.find((l) => l.type === "custom" || l.type === "social")?.value || null;
+      setPhone(phoneLink);
+      setEmail(emailLink);
+      setWebsite(webLink);
+      setLoading(false);
+    });
   }, [user]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -362,6 +387,19 @@ Prepared for ${displayName ?? username} — ${new Date().toLocaleDateString()}
               })}
             </div>
           </section>
+
+          {/* Business Card Studio */}
+          {shareUrl && (
+            <BusinessCardStudio
+              username={username}
+              displayName={displayName}
+              bio={bio}
+              phone={phone}
+              email={email}
+              website={website}
+              shareUrl={shareUrl}
+            />
+          )}
 
           {/* QR */}
           <motion.div
