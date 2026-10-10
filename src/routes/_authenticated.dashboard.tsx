@@ -706,6 +706,7 @@ function DashboardPage() {
       {/* New User Onboarding Wizard */}
       <OnboardingWizard
         userId={user?.id}
+        hasCompletedProfile={!!profile?.username}
         forceOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
       />

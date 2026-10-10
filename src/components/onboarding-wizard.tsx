@@ -22,43 +22,86 @@ import {
   X,
 } from "lucide-react";
 
+import { supabase } from "@/integrations/supabase/client";
+
 interface OnboardingWizardProps {
   userId?: string;
+  hasCompletedProfile?: boolean;
   forceOpen?: boolean;
   onClose?: () => void;
 }
 
-export function OnboardingWizard({ userId, forceOpen = false, onClose }: OnboardingWizardProps) {
+export function OnboardingWizard({
+  userId,
+  hasCompletedProfile = false,
+  forceOpen = false,
+  onClose,
+}: OnboardingWizardProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
-  const storageKey = userId ? `mtc_onboarding_seen_${userId}` : "mtc_onboarding_seen";
+  const markAsSeen = () => {
+    try {
+      localStorage.setItem("mtc_onboarding_seen", "true");
+      if (userId) {
+        localStorage.setItem(`mtc_onboarding_seen_${userId}`, "true");
+      }
+      // Silently persist to Supabase user metadata across all devices
+      supabase.auth.updateUser({ data: { onboarding_seen: true } }).catch(() => {});
+    } catch {
+      // Ignore storage errors in restricted browser modes
+    }
+  };
 
   useEffect(() => {
+    // If user clicked the "Guide" button manually, always open
     if (forceOpen) {
       setStep(0);
       setOpen(true);
       return;
     }
 
-    // Auto-open on first visit if not seen
-    const seen = localStorage.getItem(storageKey);
-    if (!seen) {
-      const timer = setTimeout(() => {
-        setOpen(true);
-      }, 800);
-      return () => clearTimeout(timer);
+    // If the user already has an existing profile (not a brand new registration), never auto-open
+    if (hasCompletedProfile) {
+      markAsSeen();
+      return;
     }
-  }, [forceOpen, storageKey]);
+
+    // Check local storage first (instant check)
+    const isSeenLocally =
+      localStorage.getItem("mtc_onboarding_seen") === "true" ||
+      (userId ? localStorage.getItem(`mtc_onboarding_seen_${userId}`) === "true" : false);
+
+    if (isSeenLocally) {
+      return;
+    }
+
+    // Also check Supabase user metadata if available
+    if (userId) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user?.user_metadata?.onboarding_seen) {
+          markAsSeen();
+          return;
+        }
+
+        // Brand-new first-time user: display once and immediately record as seen
+        const timer = setTimeout(() => {
+          setOpen(true);
+          markAsSeen();
+        }, 1000);
+        return () => clearTimeout(timer);
+      });
+    }
+  }, [forceOpen, userId, hasCompletedProfile]);
 
   const handleFinish = () => {
-    localStorage.setItem(storageKey, "true");
+    markAsSeen();
     setOpen(false);
     onClose?.();
   };
 
   const handleClose = () => {
-    localStorage.setItem(storageKey, "true");
+    markAsSeen();
     setOpen(false);
     onClose?.();
   };
