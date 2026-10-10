@@ -1,7 +1,7 @@
 // Compress + resize an image client-side before upload.
 // Returns a JPEG/WebP Blob no larger than `maxSize` on its longest edge.
 export async function compressImage(
-  file: File,
+  file: File | Blob,
   {
     maxSize = 512,
     quality = 0.85,

@@ -31,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const { user } = useAuth();
   const { isPro, proUntil, referralCode } = useProStatus();
+  const [currentPwd, setCurrentPwd] = useState("");
   const [pwd, setPwd] = useState("");
   const [pwd2, setPwd2] = useState("");
   const [savingPwd, setSavingPwd] = useState(false);
@@ -129,7 +130,17 @@ function SettingsPage() {
     toast.success("Referral link copied");
   }
 
+  const hasExistingPassword =
+    user?.app_metadata?.provider === "email" ||
+    ((user?.app_metadata?.providers as string[] | undefined)?.includes("email") ?? false) ||
+    identities.some((i) => i.provider === "email") ||
+    (!identities.length && user?.app_metadata?.provider !== "google");
+
   async function changePassword() {
+    if (hasExistingPassword && !currentPwd) {
+      toast.error("Please enter your current password");
+      return;
+    }
     if (pwd.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
@@ -138,16 +149,36 @@ function SettingsPage() {
       toast.error("Passwords don't match");
       return;
     }
+    if (hasExistingPassword && currentPwd === pwd) {
+      toast.error("New password must be different from current password");
+      return;
+    }
+
     setSavingPwd(true);
+
+    if (hasExistingPassword && user?.email) {
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPwd,
+      });
+
+      if (verifyError) {
+        setSavingPwd(false);
+        toast.error("Current password is incorrect");
+        return;
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({ password: pwd });
     setSavingPwd(false);
     if (error) {
       toast.error(error.message);
       return;
     }
+    setCurrentPwd("");
     setPwd("");
     setPwd2("");
-    toast.success("Password updated");
+    toast.success("Password updated successfully");
   }
 
   async function linkGoogle() {
@@ -343,28 +374,48 @@ function SettingsPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Use at least 8 characters. We recommend a unique passphrase.
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="pwd">New password</Label>
-            <PasswordField
-              id="pwd"
-              value={pwd}
-              onChange={(e) => setPwd(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pwd2">Confirm</Label>
-            <PasswordField
-              id="pwd2"
-              value={pwd2}
-              onChange={(e) => setPwd2(e.target.value)}
-              autoComplete="new-password"
-            />
+        <div className="mt-4 space-y-3">
+          {hasExistingPassword && (
+            <div className="space-y-2">
+              <Label htmlFor="current-pwd">Current password</Label>
+              <PasswordField
+                id="current-pwd"
+                value={currentPwd}
+                onChange={(e) => setCurrentPwd(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Enter your current password"
+              />
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="pwd">New password</Label>
+              <PasswordField
+                id="pwd"
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
+                autoComplete="new-password"
+                placeholder="At least 8 characters"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pwd2">Confirm new password</Label>
+              <PasswordField
+                id="pwd2"
+                value={pwd2}
+                onChange={(e) => setPwd2(e.target.value)}
+                autoComplete="new-password"
+                placeholder="Repeat new password"
+              />
+            </div>
           </div>
         </div>
         <div className="mt-4 flex justify-end">
-          <Button variant="hero" onClick={changePassword} disabled={savingPwd || !pwd || !pwd2}>
+          <Button
+            variant="hero"
+            onClick={changePassword}
+            disabled={savingPwd || (hasExistingPassword ? !currentPwd : false) || !pwd || !pwd2}
+          >
             {savingPwd ? "Updating…" : "Update password"}
           </Button>
         </div>

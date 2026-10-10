@@ -30,6 +30,7 @@ import {
   Upload,
 } from "lucide-react";
 import { compressImage } from "@/lib/image";
+import { ImageCropDialog } from "@/components/image-crop-dialog";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — MyTapCard" }] }),
@@ -60,6 +61,8 @@ function ProfilePage() {
   const [savingUsername, setSavingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const bioRef = useRef<HTMLTextAreaElement>(null);
   useGlobalLoading(saving || savingUsername || uploading, "profile-actions");
@@ -150,19 +153,34 @@ function ProfilePage() {
     toast.success("Username saved");
   }
 
-  async function handleFile(file: File) {
+  function handleFileSelected(file: File) {
     if (!user || !profile) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("Image is too large (max 8MB)");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image is too large (max 10MB)");
       return;
     }
+    const url = URL.createObjectURL(file);
+    setCropSrc(url);
+    setCropOpen(true);
+  }
+
+  function handleCloseCrop() {
+    if (cropSrc) {
+      URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
+    }
+    setCropOpen(false);
+  }
+
+  async function handleCroppedBlob(croppedBlob: Blob) {
+    if (!user || !profile) return;
     setUploading(true);
     try {
-      const blob = await compressImage(file, { maxSize: 512, quality: 0.85, mime: "image/webp" });
+      const blob = await compressImage(croppedBlob, { maxSize: 512, quality: 0.85, mime: "image/webp" });
       const path = `${user.id}/avatar-${Date.now()}.webp`;
       const { error: upErr } = await supabase.storage.from("avatars").upload(path, blob, {
         contentType: "image/webp",
@@ -300,7 +318,7 @@ function ProfilePage() {
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) handleFile(f);
+                if (f) handleFileSelected(f);
                 e.target.value = "";
               }}
             />
@@ -544,6 +562,13 @@ function ProfilePage() {
           {saving ? "Saving…" : "Save profile"}
         </Button>
       </div>
+
+      <ImageCropDialog
+        open={cropOpen}
+        imageSrc={cropSrc}
+        onClose={handleCloseCrop}
+        onCropComplete={handleCroppedBlob}
+      />
     </div>
   );
 }
